@@ -2,6 +2,10 @@
 
 export default {
     title: 'Relaciones',
+    empty: 'No hay relaciones registradas',
+    emptyHint: 'Agrega relaciones entre personajes para dar profundidad a tu historia',
+    diagram: 'Diagrama de Relaciones',
+    legend: 'Leyenda',
     currentState: 'Estado Actual de la Relación',
     currentStateLabel: 'Estado Actual',
     type: 'Tipo',

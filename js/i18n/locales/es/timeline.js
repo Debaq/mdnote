@@ -6,6 +6,7 @@ export default {
     edit: 'Editar Evento',
     empty: 'No hay eventos en la línea temporal',
     emptyHint: 'Agrega eventos para organizar la cronología',
+    noEvents: 'No hay eventos en la línea temporal',
     viewList: 'Lista',
     viewVisual: 'Visual',
     viewEra: 'Eras',

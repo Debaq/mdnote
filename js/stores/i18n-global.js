@@ -49,8 +49,6 @@ window.i18nStore = {
 
     // Inicializar
     async init() {
-        console.log('🌍 Iniciando sistema de i18n modular...');
-
         // Cargar idioma guardado o detectar del navegador
         const savedLocale = localStorage.getItem('pluma_locale');
         if (savedLocale && this.availableLocales.find(l => l.code === savedLocale)) {
@@ -63,16 +61,12 @@ window.i18nStore = {
             }
         }
 
-        console.log(`📍 Idioma seleccionado: ${this.currentLocale}`);
-
         // Cargar traducciones modulares
         await this.loadTranslations();
     },
 
     // Cargar todas las traducciones modulares para el idioma actual
     async loadTranslations() {
-        console.log(`📦 Cargando traducciones modulares para ${this.currentLocale}...`);
-
         // Crear objeto de traducciones vacío
         const translations = {};
 
@@ -80,15 +74,12 @@ window.i18nStore = {
         for (const module of this.translationModules) {
             try {
                 const modulePath = `/js/i18n/locales/${this.currentLocale}/${module}.js`;
-                console.log(`  ├─ Cargando ${module}...`);
 
                 // Importar dinámicamente el módulo
                 const imported = await import(modulePath);
                 translations[module] = imported.default;
-
-                console.log(`  ✅ ${module} cargado`);
             } catch (error) {
-                console.error(`  ❌ Error cargando ${module}:`, error);
+                console.error(`Error cargando módulo de traducción ${module}:`, error);
             }
         }
 
@@ -101,9 +92,6 @@ window.i18nStore = {
 
         // Guardar también en this.translations para acceso directo
         this.translations = translations;
-
-        console.log(`✅ Traducciones cargadas:`, Object.keys(translations).length, 'módulos');
-        console.log(`📚 Módulos disponibles:`, Object.keys(translations));
 
         // Marcar como listo
         this.ready = true;
@@ -124,7 +112,10 @@ window.i18nStore = {
         const translation = this.getNestedTranslation(key);
 
         if (!translation) {
-            console.warn(`⚠️ Traducción no encontrada: ${key}`);
+            // Solo mostrar warning en desarrollo (cuando debug está habilitado)
+            if (localStorage.getItem('pluma_debug_logs') === 'true') {
+                console.warn(`⚠️ Traducción no encontrada: ${key}`);
+            }
             return key;
         }
 
