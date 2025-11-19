@@ -76,7 +76,7 @@ window.i18nStore = {
         // Cargar cada módulo
         for (const module of this.translationModules) {
             try {
-                const modulePath = `./js/i18n/locales/${this.currentLocale}/${module}.js`;
+                const modulePath = `/js/i18n/locales/${this.currentLocale}/${module}.js`;
                 console.log(`  ├─ Cargando ${module}...`);
 
                 // Importar dinámicamente el módulo
