@@ -963,7 +963,28 @@ window.translations_es = {
             exportCurrentProject: 'Exportar Proyecto Actual',
             exportProject: 'Exportar Proyecto',
             exportAllData: 'Exportar Todos los Datos',
-            deleteAllData: 'Eliminar Todos los Datos Localmente'
+            deleteAllData: 'Eliminar Todos los Datos Localmente',
+            providerInfo: {
+                freeTier: 'Tier gratuito:',
+                pricing: 'Precio:',
+                notAvailable: 'No disponible',
+                checkWebsite: 'Consultar sitio web'
+            },
+            messages: {
+                apiKeyExists: 'Esta API key ya está guardada',
+                apiKeySaved: 'API key guardada como "{name}"',
+                errorSavingKey: 'Error al guardar la API key',
+                testingConnection: 'Probando conexión...',
+                connectionSuccess: '✓ Conexión exitosa',
+                apiKeyDeleted: 'API key eliminada',
+                defaultKeyUpdated: 'Key por defecto actualizada',
+                unnamed: 'Sin nombre',
+                logsEnabled: '🔍 Logs de depuración activados',
+                logsDisabled: '🔇 Logs de depuración desactivados',
+                agenticModeEnabled: '🤖 Modo agéntico activado: La IA decidirá qué contexto necesita',
+                traditionalModeEnabled: '📦 Modo tradicional activado: Se enviará todo el contexto con optimización',
+                deleteDataText: 'ELIMINAR DATOS'
+            }
         }
     },
 
