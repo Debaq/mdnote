@@ -4,10 +4,8 @@
 // Asumimos que los stores y storageManager están disponibles globalmente (cargados en index.html)
 
 document.addEventListener('alpine:init', async () => {
-    // IMPORTANTE: Cargar traducciones PRIMERO antes de hacer cualquier cosa
-    console.log('🔄 Cargando traducciones antes de inicializar Alpine.js...');
-    await window.i18nStore.init();
-    console.log('✅ Traducciones cargadas, continuando con Alpine.js...');
+    // NOTA: Las traducciones ya fueron cargadas en index.html antes de cargar Alpine.js
+    console.log('🔄 Inicializando Alpine.js stores...');
 
     // Hacer los objetos profundamente reactivos primero
     const reactiveI18n = Alpine.reactive(window.i18nStore);

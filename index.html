@@ -133,7 +133,7 @@
         }
     </style>
 </head>
-<body x-data="app" x-cloak>
+<body x-cloak>
     <!-- Loading Screen -->
     <div id="app-loader">
         <div class="loader-content">
@@ -336,8 +336,62 @@
 
     <!-- Alpine.js 3.x - Cargar al final -->
     <!-- Alpine Collapse Plugin - DEBE cargarse ANTES de Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- NOTA: Los scripts de Alpine.js se cargan manualmente después de que las traducciones estén listas -->
+    <script id="alpine-collapse-script" data-src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script id="alpine-script" data-src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        // Inicializar traducciones y luego cargar Alpine.js
+        (async function() {
+            console.log('🚀 Iniciando carga de PlumaAI...');
+
+            const loadAlpine = () => {
+                console.log('📦 Cargando Alpine.js...');
+                // Cargar Alpine Collapse primero
+                const collapseScript = document.createElement('script');
+                collapseScript.src = document.getElementById('alpine-collapse-script').getAttribute('data-src');
+                collapseScript.onload = () => {
+                    // Luego cargar Alpine.js
+                    const alpineScript = document.createElement('script');
+                    alpineScript.src = document.getElementById('alpine-script').getAttribute('data-src');
+                    document.body.appendChild(alpineScript);
+                };
+                document.body.appendChild(collapseScript);
+            };
+
+            // Esperar a que window.i18nStore esté disponible
+            const waitForI18nStore = () => {
+                return new Promise((resolve) => {
+                    if (window.i18nStore) {
+                        resolve();
+                    } else {
+                        const checkInterval = setInterval(() => {
+                            if (window.i18nStore) {
+                                clearInterval(checkInterval);
+                                resolve();
+                            }
+                        }, 50);
+                    }
+                });
+            };
+
+            try {
+                // Esperar a que el store i18n esté disponible
+                await waitForI18nStore();
+                console.log('📚 Store i18n disponible, inicializando traducciones...');
+
+                // Inicializar traducciones
+                await window.i18nStore.init();
+                console.log('✅ Traducciones listas, cargando Alpine.js...');
+
+                // Cargar Alpine.js
+                loadAlpine();
+            } catch (error) {
+                console.error('❌ Error inicializando traducciones:', error);
+                console.warn('⚠️ Cargando Alpine.js sin traducciones...');
+                loadAlpine();
+            }
+        })();
+    </script>
 
     <!-- Initialize Lucide Icons -->
     <script>
