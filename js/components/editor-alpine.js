@@ -696,6 +696,11 @@ window.editorAlpineComponent = function() {
                     this.$store.i18n.t('ai.error') || 'Error de IA',
                     error.message || 'Ocurrió un error al procesar la solicitud'
                 );
+            } finally {
+                // Limpiar estado de loading si existe
+                if (this.$store.ui && this.$store.ui.stopLoading) {
+                    this.$store.ui.stopLoading('ai');
+                }
             }
         },
 
@@ -720,6 +725,7 @@ window.editorAlpineComponent = function() {
                 return;
             }
 
+            let conversation = null;
             try {
                 this.$store.ui.info(
                     this.$store.i18n.t('ai.processing') || 'Procesando...',
@@ -730,7 +736,7 @@ window.editorAlpineComponent = function() {
                 const userPrompt = 'Continúa el texto desde donde terminé, manteniendo el estilo y tono establecidos';
 
                 // CREAR CONVERSACIÓN
-                const conversation = await window.aiConversationsService.createConversation({
+                conversation = await window.aiConversationsService.createConversation({
                     mode: 'continue',
                     userPrompt: userPrompt,
                     chapterId: chapterId,
@@ -788,6 +794,10 @@ window.editorAlpineComponent = function() {
 
             } catch (error) {
                 console.error('❌ AI Error:', error);
+                // Si se creó una conversación, marcarla como fallida y eliminarla
+                if (conversation && conversation.id) {
+                    this.$store.project.deleteAIConversation(conversation.id);
+                }
                 this.$store.ui.error(
                     this.$store.i18n.t('ai.error') || 'Error de IA',
                     error.message || 'Ocurrió un error al procesar la solicitud'
@@ -816,6 +826,7 @@ window.editorAlpineComponent = function() {
                 return;
             }
 
+            let conversation = null;
             try {
                 // Obtener texto seleccionado (si hay)
                 const selectedText = this.editor?.getSelectedText ? this.editor.getSelectedText() : '';
@@ -834,7 +845,7 @@ window.editorAlpineComponent = function() {
                     : 'Analiza el capítulo completo y sugiere mejoras específicas para mejorar la prosa, el ritmo, la claridad y el impacto. Proporciona sugerencias concretas y accionables.';
 
                 // CREAR CONVERSACIÓN
-                const conversation = await window.aiConversationsService.createConversation({
+                conversation = await window.aiConversationsService.createConversation({
                     mode: 'improve',
                     userPrompt: userPrompt,
                     chapterId: chapterId,
@@ -892,6 +903,10 @@ window.editorAlpineComponent = function() {
 
             } catch (error) {
                 console.error('❌ AI Error:', error);
+                // Si se creó una conversación, marcarla como fallida y eliminarla
+                if (conversation && conversation.id) {
+                    this.$store.project.deleteAIConversation(conversation.id);
+                }
                 this.$store.ui.error(
                     this.$store.i18n.t('ai.error') || 'Error de IA',
                     error.message || 'Ocurrió un error al procesar la solicitud'
@@ -920,6 +935,7 @@ window.editorAlpineComponent = function() {
                 return;
             }
 
+            let conversation = null;
             try {
                 this.$store.ui.info(
                     this.$store.i18n.t('ai.processing') || 'Procesando...',
@@ -934,7 +950,7 @@ window.editorAlpineComponent = function() {
                     : 'Genera contenido nuevo para insertar en esta posición, considerando el contexto anterior y posterior';
 
                 // CREAR CONVERSACIÓN
-                const conversation = await window.aiConversationsService.createConversation({
+                conversation = await window.aiConversationsService.createConversation({
                     mode: 'continue',
                     userPrompt: userPrompt,
                     chapterId: chapterId,
@@ -992,6 +1008,10 @@ window.editorAlpineComponent = function() {
 
             } catch (error) {
                 console.error('❌ AI Error:', error);
+                // Si se creó una conversación, marcarla como fallida y eliminarla
+                if (conversation && conversation.id) {
+                    this.$store.project.deleteAIConversation(conversation.id);
+                }
                 this.$store.ui.error(
                     this.$store.i18n.t('ai.error') || 'Error de IA',
                     error.message || 'Ocurrió un error al procesar la solicitud'
@@ -1020,6 +1040,7 @@ window.editorAlpineComponent = function() {
                 return;
             }
 
+            let conversation = null;
             try {
                 // Obtener texto seleccionado (si hay)
                 const selectedText = this.editor?.getSelectedText ? this.editor.getSelectedText() : '';
@@ -1038,7 +1059,7 @@ window.editorAlpineComponent = function() {
                     : 'Resume este capítulo de manera concisa y clara, capturando:\n- Puntos clave de la trama\n- Desarrollo de personajes\n- Eventos importantes\n- Temas principales';
 
                 // CREAR CONVERSACIÓN
-                const conversation = await window.aiConversationsService.createConversation({
+                conversation = await window.aiConversationsService.createConversation({
                     mode: 'analyze',
                     userPrompt: userPrompt,
                     chapterId: chapterId,
@@ -1096,6 +1117,10 @@ window.editorAlpineComponent = function() {
 
             } catch (error) {
                 console.error('❌ AI Error:', error);
+                // Si se creó una conversación, marcarla como fallida y eliminarla
+                if (conversation && conversation.id) {
+                    this.$store.project.deleteAIConversation(conversation.id);
+                }
                 this.$store.ui.error(
                     this.$store.i18n.t('ai.error') || 'Error de IA',
                     error.message || 'Ocurrió un error al procesar la solicitud'

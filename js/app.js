@@ -1399,6 +1399,14 @@ document.addEventListener('alpine:initialized', () => {
                 isFirstInit = false;
             } catch (error) {
                 console.error('Error actualizando índice de búsqueda:', error);
+                // Solo notificar en la primera inicialización, no en actualizaciones posteriores
+                if (isFirstInit && Alpine.store && Alpine.store('ui')) {
+                    Alpine.store('ui').warning(
+                        'Advertencia',
+                        'No se pudo inicializar el sistema de búsqueda. La búsqueda podría no funcionar correctamente.',
+                        5000
+                    );
+                }
             }
         };
 

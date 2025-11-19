@@ -144,7 +144,9 @@ class SearchService {
             this.isInitialized = true;
 
         } catch (error) {
+            console.error('❌ Error creando índice de búsqueda:', error);
             this.isInitialized = false;
+            this.idx = null;
         }
     }
 

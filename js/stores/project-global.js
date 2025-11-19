@@ -1211,6 +1211,14 @@ window.projectStore = {
                     await window.storageManager.save(this.exportProject());
                 } catch (error) {
                     console.error('Error en auto-guardado:', error);
+                    // Notificar al usuario que el auto-guardado falló
+                    if (Alpine && Alpine.store && Alpine.store('ui')) {
+                        Alpine.store('ui').error(
+                            'Error en auto-guardado',
+                            'No se pudo guardar automáticamente. Por favor, guarda manualmente.',
+                            8000
+                        );
+                    }
                 }
             }, 1000);
         }

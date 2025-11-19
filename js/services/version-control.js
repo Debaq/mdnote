@@ -329,12 +329,23 @@ window.versionControl = {
 
         if (!branch) {
             console.error('❌ Rama actual no existe');
-            return Alpine.store('project').exportProject();
+            // Verificar que Alpine y el store existan antes de usarlos
+            if (typeof Alpine !== 'undefined' && Alpine.store && Alpine.store('project')) {
+                return Alpine.store('project').exportProject();
+            }
+            return null;
         }
 
         // Si no hay commits, retornar snapshot base o estado actual
         if (!branch.head) {
-            return branch.baseSnapshot || Alpine.store('project').exportProject();
+            if (branch.baseSnapshot) {
+                return branch.baseSnapshot;
+            }
+            // Verificar que Alpine y el store existan antes de usarlos
+            if (typeof Alpine !== 'undefined' && Alpine.store && Alpine.store('project')) {
+                return Alpine.store('project').exportProject();
+            }
+            return null;
         }
 
         return this._reconstructState(branch, branch.head);
