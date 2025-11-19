@@ -169,27 +169,5 @@ window.i18nStore = {
     }
 };
 
-// Auto-inicializar cuando se carga el script y bloquear Alpine.js hasta que esté listo
-(async function() {
-    // Prevenir que Alpine.js se inicialice automáticamente
-    window.deferLoadingAlpine = function (callback) {
-        // Esperar a que las traducciones estén listas
-        window.i18nStore.init().then(() => {
-            console.log('🎉 Traducciones listas, iniciando Alpine.js...');
-            callback();
-        });
-    };
-
-    // Si Alpine ya está cargado, inicializar manualmente
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (!window.Alpine) {
-                await window.i18nStore.init();
-            }
-        });
-    } else {
-        if (!window.Alpine) {
-            await window.i18nStore.init();
-        }
-    }
-})();
+// NO auto-inicializar - dejar que app.js lo haga cuando Alpine.js esté listo
+// Esto asegura que las traducciones estén cargadas antes de que Alpine.js renderice
