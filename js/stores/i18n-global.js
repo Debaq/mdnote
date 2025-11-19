@@ -32,6 +32,8 @@ window.i18nStore = {
         if (this.availableLocales.find(l => l.code === locale)) {
             this.currentLocale = locale;
             localStorage.setItem('pluma_locale', locale);
+            // Recargar la página para aplicar el nuevo idioma
+            window.location.reload();
         }
     },
 
