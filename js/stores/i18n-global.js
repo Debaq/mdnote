@@ -1,10 +1,16 @@
 // Store para internacionalización
+// NOTA: Este archivo carga las traducciones de forma modular
+// Los módulos están en /js/i18n/locales/{lang}/{module}.js
+
 window.i18nStore = {
     // Idioma actual
     currentLocale: 'es', // 'es' | 'en'
 
-    // Traducciones cargadas
+    // Traducciones cargadas (se llenan dinámicamente)
     translations: {},
+
+    // Indicador de si las traducciones están listas
+    ready: false,
 
     // Idiomas disponibles
     availableLocales: [
@@ -12,8 +18,39 @@ window.i18nStore = {
         { code: 'en', name: 'English', flag: '🇬🇧' }
     ],
 
+    // Módulos de traducción disponibles
+    translationModules: [
+        'common',
+        'header',
+        'sidebar',
+        'dashboard',
+        'characters',
+        'scenes',
+        'locations',
+        'chapters',
+        'timeline',
+        'lore',
+        'ai',
+        'notes',
+        'editor',
+        'publishing',
+        'modals',
+        'status',
+        'notifications',
+        'stats',
+        'validation',
+        'relationships',
+        'vitalStatus',
+        'versionControl',
+        'project',
+        'loading',
+        'avatars'
+    ],
+
     // Inicializar
     async init() {
+        console.log('🌍 Iniciando sistema de i18n modular...');
+
         // Cargar idioma guardado o detectar del navegador
         const savedLocale = localStorage.getItem('pluma_locale');
         if (savedLocale && this.availableLocales.find(l => l.code === savedLocale)) {
@@ -25,6 +62,51 @@ window.i18nStore = {
                 this.currentLocale = browserLang;
             }
         }
+
+        console.log(`📍 Idioma seleccionado: ${this.currentLocale}`);
+
+        // Cargar traducciones modulares
+        await this.loadTranslations();
+    },
+
+    // Cargar todas las traducciones modulares para el idioma actual
+    async loadTranslations() {
+        console.log(`📦 Cargando traducciones modulares para ${this.currentLocale}...`);
+
+        // Crear objeto de traducciones vacío
+        const translations = {};
+
+        // Cargar cada módulo
+        for (const module of this.translationModules) {
+            try {
+                const modulePath = `/js/i18n/locales/${this.currentLocale}/${module}.js`;
+                console.log(`  ├─ Cargando ${module}...`);
+
+                // Importar dinámicamente el módulo
+                const imported = await import(modulePath);
+                translations[module] = imported.default;
+
+                console.log(`  ✅ ${module} cargado`);
+            } catch (error) {
+                console.error(`  ❌ Error cargando ${module}:`, error);
+            }
+        }
+
+        // Guardar traducciones en el objeto global apropiado
+        if (this.currentLocale === 'es') {
+            window.translations_es = translations;
+        } else if (this.currentLocale === 'en') {
+            window.translations_en = translations;
+        }
+
+        // Guardar también en this.translations para acceso directo
+        this.translations = translations;
+
+        console.log(`✅ Traducciones cargadas:`, Object.keys(translations).length, 'módulos');
+        console.log(`📚 Módulos disponibles:`, Object.keys(translations));
+
+        // Marcar como listo
+        this.ready = true;
     },
 
     // Cambiar idioma
@@ -42,6 +124,7 @@ window.i18nStore = {
         const translation = this.getNestedTranslation(key);
 
         if (!translation) {
+            console.warn(`⚠️ Traducción no encontrada: ${key}`);
             return key;
         }
 
@@ -51,13 +134,13 @@ window.i18nStore = {
 
     // Obtener traducción anidada
     getNestedTranslation(key) {
+        // Si no están listas las traducciones, retornar null
+        if (!this.ready) {
+            return null;
+        }
+
         const keys = key.split('.');
-        // Usar las traducciones globales
-        const translations = {
-            es: window.translations_es,
-            en: window.translations_en
-        };
-        let value = translations[this.currentLocale];
+        let value = this.translations;
 
         for (const k of keys) {
             if (value && typeof value === 'object') {
@@ -85,3 +168,6 @@ window.i18nStore = {
         return locale ? locale.name : this.currentLocale;
     }
 };
+
+// NO auto-inicializar - dejar que app.js lo haga cuando Alpine.js esté listo
+// Esto asegura que las traducciones estén cargadas antes de que Alpine.js renderice
