@@ -20,6 +20,15 @@ export default {
         worldbuild: 'Expandir worldbuilding',
         characterize: 'Desarrollar personaje'
     },
+    systemPrompts: {
+        continue: 'Eres un asistente de escritura creativa. Tu tarea es continuar la historia de manera coherente y creativa, manteniendo el estilo, tono y voz establecidos.',
+        suggest: 'Eres un asistente creativo que genera ideas y sugerencias para desarrollar la historia. Proporciona opciones variadas y creativas.',
+        analyze: 'Eres un editor literario. Analiza el texto en busca de inconsistencias, problemas de ritmo, caracterización, y oportunidades de mejora.',
+        improve: 'Eres un editor literario experto. Reescribe el pasaje seleccionado mejorando la prosa, el ritmo, y la claridad sin cambiar la intención original.',
+        dialogue: 'Eres un especialista en diálogos. Genera diálogos naturales y característicos para los personajes, respetando su personalidad y trasfondo.',
+        worldbuild: 'Eres un experto en worldbuilding. Ayuda a expandir y profundizar el mundo de la historia, creando detalles coherentes y ricos.',
+        characterize: 'Eres un experto en caracterización. Ayuda a desarrollar personajes tridimensionales con motivaciones, conflictos y arcos coherentes.'
+    },
     prompt: {
         label: 'Instrucción para la IA',
         placeholder: 'Escribe qué quieres que haga la IA...',
