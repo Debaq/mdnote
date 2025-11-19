@@ -6,7 +6,7 @@ window.welcomeModalComponent = function() {
 
         async init() {
             // Initialize selected language from current locale
-            this.selectedLanguage = Alpine.store('i18n').locale;
+            this.selectedLanguage = Alpine.store('i18n').currentLocale;
 
             // Cargar la lista de proyectos para ver si hay alguno reciente
             try {
@@ -25,10 +25,10 @@ window.welcomeModalComponent = function() {
             }
         },
 
-        selectLanguage(lang) {
+        async selectLanguage(lang) {
             this.selectedLanguage = lang;
-            // Change the application language
-            Alpine.store('i18n').changeLocale(lang);
+            // Change the application language without reloading
+            await Alpine.store('i18n').changeLocale(lang);
         },
         
         async loadLastProject() {
@@ -94,14 +94,14 @@ window.welcomeModalComponent = function() {
 
                 // Mostrar mensaje de éxito
                 Alpine.store('ui').success(
-                    'Proyecto de demostración cargado',
-                    'Puedes explorar las funciones de PlumaAI con datos de ejemplo'
+                    Alpine.store('i18n').t('notifications.success.demoLoaded') || 'Proyecto de demostración cargado',
+                    Alpine.store('i18n').t('notifications.success.demoLoadedDesc') || 'Puedes explorar las funciones de PlumaAI con datos de ejemplo'
                 );
             } catch (error) {
                 console.error('Error loading demo project:', error);
                 Alpine.store('ui').error(
-                    'Error al cargar proyecto de demostración',
-                    `No se pudo descargar el archivo de ejemplo. ${error.message}`
+                    Alpine.store('i18n').t('notifications.error.demoLoadFailed') || 'Error al cargar proyecto de demostración',
+                    Alpine.store('i18n').t('notifications.error.demoLoadFailedDesc', { message: error.message }) || `No se pudo descargar el archivo de ejemplo. ${error.message}`
                 );
                 // Si falla, volver a abrir el modal de bienvenida
                 Alpine.store('ui').openModal('welcome');

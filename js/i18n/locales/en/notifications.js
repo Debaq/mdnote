@@ -35,7 +35,9 @@ export default {
         treeCreated: 'Structure created successfully',
         treeCreatedDesc: 'Structure {treeName} created',
         treeFailed: 'Error creating structure',
-        treeFailedDesc: 'Could not create structure'
+        treeFailedDesc: 'Could not create structure',
+        demoLoaded: 'Demo project loaded',
+        demoLoadedDesc: 'You can explore PlumaAI features with sample data'
     },
     error: {
         generic: 'An error occurred',
@@ -49,6 +51,8 @@ export default {
         commitFailedDesc: 'Could not create commit',
         checkoutFailed: 'Checkout failed',
         checkoutFailedDesc: 'Could not change to commit state',
+        demoLoadFailed: 'Error loading demo project',
+        demoLoadFailedDesc: 'Could not download the example file. {message}',
         forkFailed: 'Error creating fork',
         forkFailedDesc: 'Could not create fork'
     }

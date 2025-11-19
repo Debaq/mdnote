@@ -107,6 +107,16 @@ window.i18nStore = {
         }
     },
 
+    // Cambiar idioma sin recargar (para uso en modales)
+    async changeLocale(locale) {
+        if (this.availableLocales.find(l => l.code === locale)) {
+            this.currentLocale = locale;
+            localStorage.setItem('pluma_locale', locale);
+            // Recargar traducciones para el nuevo idioma
+            await this.loadTranslations();
+        }
+    },
+
     // Obtener traducción por key (soporta notación de punto: 'header.title')
     t(key, params = {}) {
         const translation = this.getNestedTranslation(key);
