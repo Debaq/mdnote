@@ -15,6 +15,7 @@ export default {
         simple: 'Simples'
     },
     uploadHint: 'Formatos soportados: JPG, PNG, GIF, SVG, WebP (máx. 5MB)',
+    generateAI: 'Generar con IA',
     errorInvalidType: 'Tipo de archivo no válido',
     errorTooLarge: 'El archivo es muy grande'
 };

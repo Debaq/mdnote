@@ -26,6 +26,7 @@ export default {
             race: 'Raza',
             location: 'Ubicación',
             item: 'Objeto',
+            objects: 'Objetos',
             creature: 'Criatura'
         },
         relatedEntities: 'Entidades Relacionadas',

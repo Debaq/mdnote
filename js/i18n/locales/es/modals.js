@@ -111,6 +111,8 @@ export default {
     },
     password: {
         title: 'Contraseña Requerida',
+        message: 'Este archivo está encriptado. Ingresa la contraseña para desencriptarlo.',
+        decrypt: 'Desencriptar',
         password: 'Contraseña',
         passwordPlaceholder: 'Ingresa tu contraseña',
         encryptAll: 'Encriptar todo el proyecto'
@@ -126,7 +128,8 @@ export default {
         customImageLoaded: 'Imagen personalizada cargada'
     },
     projectsList: {
-        title: 'Mis Proyectos'
+        title: 'Mis Proyectos',
+        noProjects: 'No hay proyectos guardados'
     },
     editRelationship: {
         title: 'Relación y su Historia'
