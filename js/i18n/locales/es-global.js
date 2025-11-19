@@ -740,6 +740,7 @@ window.translations_es = {
             dataManagement: {
                 title: 'Gestión de Datos',
                 description: 'Gestiona los datos almacenados localmente en este navegador',
+                exportProjectDescription: 'Descarga el proyecto actual como archivo .pluma con imágenes y encriptación opcional',
                 warningTitle: '¡Advertencia Importante!',
                 warningDescription: 'Esta acción eliminará permanentemente todos los proyectos, personajes, capítulos y configuraciones almacenados localmente en este navegador. Esta acción no se puede deshacer.',
                 exportBeforeDeleteLabel: 'Recomendamos exportar tus datos antes de eliminarlos:',

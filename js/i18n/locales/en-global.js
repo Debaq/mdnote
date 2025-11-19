@@ -739,6 +739,7 @@ window.translations_en = {
             dataManagement: {
                 title: 'Data Management',
                 description: 'Manage data stored locally in this browser',
+                exportProjectDescription: 'Download current project as .pluma file with images and optional encryption',
                 warningTitle: 'Important Warning!',
                 warningDescription: 'This action will permanently delete all projects, characters, chapters, and settings stored locally in this browser. This action cannot be undone.',
                 exportBeforeDeleteLabel: 'We recommend exporting your data before deleting:',
