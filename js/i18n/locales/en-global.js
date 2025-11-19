@@ -728,41 +728,6 @@ window.translations_en = {
             justLook: 'Just Look Around',
             getStarted: 'Get Started'
         },
-        settings: {
-            title: 'Settings',
-            theme: {
-                title: 'Appearance',
-                label: 'Theme',
-                dark: 'Dark',
-                dracula: 'Dracula',
-                light: 'Light Pastel'
-            },
-            dataManagement: {
-                title: 'Data Management',
-                description: 'Manage data stored locally in this browser',
-                exportProjectDescription: 'Download current project as .pluma file with images and optional encryption',
-                warningTitle: 'Important Warning!',
-                warningDescription: 'This action will permanently delete all projects, characters, chapters, and settings stored locally in this browser. This action cannot be undone.',
-                exportBeforeDeleteLabel: 'We recommend exporting your data before deleting:',
-                exportAllButton: 'Export All Data',
-                noDataTitle: 'No data',
-                noDataMessage: 'No projects to export',
-                exportSuccessTitle: 'Data exported',
-                exportSuccessMessage: 'All data has been exported successfully',
-                exportErrorTitle: 'Error exporting',
-                exportErrorMessage: 'An error occurred while trying to export the data',
-                confirmationLabel: 'To confirm deletion, type "DELETE DATA" in the field below:',
-                confirmationPlaceholder: 'DELETE DATA',
-                understandCheckbox: 'I understand this action cannot be undone and that I will lose all data stored locally',
-                deleteButton: 'Delete All Data Locally',
-                deletionConfirmed: 'Data deleted successfully. The application will reload in a few seconds.',
-                confirmDeletion: 'Are you completely sure? This action will delete all your local data and cannot be undone.',
-                deletionSuccessTitle: 'Data deleted',
-                deletionSuccessMessage: 'All local data has been deleted successfully.',
-                deletionErrorTitle: 'Error deleting data',
-                deletionErrorMessage: 'An error occurred while trying to delete the data.'
-            }
-        },
         newProject: {
             title: 'New Project',
             form: {
@@ -891,6 +856,38 @@ window.translations_en = {
         },
         settings: {
             title: 'Settings',
+            theme: {
+                title: 'Appearance',
+                label: 'Theme',
+                dark: 'Dark',
+                dracula: 'Dracula',
+                light: 'Light Pastel'
+            },
+            dataManagement: {
+                title: 'Data Management',
+                description: 'Manage data stored locally in this browser',
+                exportProjectDescription: 'Download the current project as a .pluma file with images and optional encryption',
+                warningTitle: 'Important Warning!',
+                warningDescription: 'This action will permanently delete all projects, characters, chapters, and settings stored locally in this browser. This action cannot be undone.',
+                exportBeforeDeleteLabel: 'We recommend exporting your data before deleting it:',
+                exportAllButton: 'Export All Data',
+                noDataTitle: 'No data',
+                noDataMessage: 'No projects to export',
+                exportSuccessTitle: 'Data exported',
+                exportSuccessMessage: 'All data has been exported successfully',
+                exportErrorTitle: 'Export error',
+                exportErrorMessage: 'An error occurred while trying to export the data',
+                confirmationLabel: 'To confirm deletion, type "DELETE DATA" in the field below:',
+                confirmationPlaceholder: 'DELETE DATA',
+                understandCheckbox: 'I understand that this action cannot be undone and that I will lose all locally stored data',
+                deleteButton: 'Delete All Data Locally',
+                deletionConfirmed: 'Data deleted successfully. The application will reload in a few seconds.',
+                confirmDeletion: 'Are you completely sure? This action will delete all your local data and cannot be undone.',
+                deletionSuccessTitle: 'Data deleted',
+                deletionSuccessMessage: 'All local data has been deleted successfully.',
+                deletionErrorTitle: 'Error deleting data',
+                deletionErrorMessage: 'An error occurred while trying to delete the data.'
+            },
             textAPIs: 'Text APIs',
             imageAPIs: 'Image APIs',
             imageProvider: 'Image Provider',

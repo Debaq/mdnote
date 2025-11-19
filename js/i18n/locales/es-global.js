@@ -729,41 +729,6 @@ window.translations_es = {
             justLook: 'Solo Mirar',
             getStarted: 'Comenzar'
         },
-        settings: {
-            title: 'Configuración',
-            theme: {
-                title: 'Apariencia',
-                label: 'Tema',
-                dark: 'Oscuro',
-                dracula: 'Drácula',
-                light: 'Claro Pastel'
-            },
-            dataManagement: {
-                title: 'Gestión de Datos',
-                description: 'Gestiona los datos almacenados localmente en este navegador',
-                exportProjectDescription: 'Descarga el proyecto actual como archivo .pluma con imágenes y encriptación opcional',
-                warningTitle: '¡Advertencia Importante!',
-                warningDescription: 'Esta acción eliminará permanentemente todos los proyectos, personajes, capítulos y configuraciones almacenados localmente en este navegador. Esta acción no se puede deshacer.',
-                exportBeforeDeleteLabel: 'Recomendamos exportar tus datos antes de eliminarlos:',
-                exportAllButton: 'Exportar Todos los Datos',
-                noDataTitle: 'No hay datos',
-                noDataMessage: 'No hay proyectos para exportar',
-                exportSuccessTitle: 'Datos exportados',
-                exportSuccessMessage: 'Todos los datos han sido exportados correctamente',
-                exportErrorTitle: 'Error al exportar',
-                exportErrorMessage: 'Ocurrió un error al intentar exportar los datos',
-                confirmationLabel: 'Para confirmar la eliminación, escribe "ELIMINAR DATOS" en el campo siguiente:',
-                confirmationPlaceholder: 'ELIMINAR DATOS',
-                understandCheckbox: 'Entiendo que esta acción no se puede deshacer y que perderé todos los datos almacenados localmente',
-                deleteButton: 'Eliminar Todos los Datos Localmente',
-                deletionConfirmed: 'Datos eliminados correctamente. La aplicación se recargará en unos segundos.',
-                confirmDeletion: '¿Estás completamente seguro? Esta acción eliminará todos tus datos locales y no se puede deshacer.',
-                deletionSuccessTitle: 'Datos eliminados',
-                deletionSuccessMessage: 'Todos los datos locales han sido eliminados correctamente.',
-                deletionErrorTitle: 'Error al eliminar datos',
-                deletionErrorMessage: 'Ocurrió un error al intentar eliminar los datos.'
-            }
-        },
         newProject: {
             title: 'Nuevo Proyecto',
             form: {
@@ -892,6 +857,38 @@ window.translations_es = {
         },
         settings: {
             title: 'Configuración',
+            theme: {
+                title: 'Apariencia',
+                label: 'Tema',
+                dark: 'Oscuro',
+                dracula: 'Drácula',
+                light: 'Claro Pastel'
+            },
+            dataManagement: {
+                title: 'Gestión de Datos',
+                description: 'Gestiona los datos almacenados localmente en este navegador',
+                exportProjectDescription: 'Descarga el proyecto actual como archivo .pluma con imágenes y encriptación opcional',
+                warningTitle: '¡Advertencia Importante!',
+                warningDescription: 'Esta acción eliminará permanentemente todos los proyectos, personajes, capítulos y configuraciones almacenados localmente en este navegador. Esta acción no se puede deshacer.',
+                exportBeforeDeleteLabel: 'Recomendamos exportar tus datos antes de eliminarlos:',
+                exportAllButton: 'Exportar Todos los Datos',
+                noDataTitle: 'No hay datos',
+                noDataMessage: 'No hay proyectos para exportar',
+                exportSuccessTitle: 'Datos exportados',
+                exportSuccessMessage: 'Todos los datos han sido exportados correctamente',
+                exportErrorTitle: 'Error al exportar',
+                exportErrorMessage: 'Ocurrió un error al intentar exportar los datos',
+                confirmationLabel: 'Para confirmar la eliminación, escribe "ELIMINAR DATOS" en el campo siguiente:',
+                confirmationPlaceholder: 'ELIMINAR DATOS',
+                understandCheckbox: 'Entiendo que esta acción no se puede deshacer y que perderé todos los datos almacenados localmente',
+                deleteButton: 'Eliminar Todos los Datos Localmente',
+                deletionConfirmed: 'Datos eliminados correctamente. La aplicación se recargará en unos segundos.',
+                confirmDeletion: '¿Estás completamente seguro? Esta acción eliminará todos tus datos locales y no se puede deshacer.',
+                deletionSuccessTitle: 'Datos eliminados',
+                deletionSuccessMessage: 'Todos los datos locales han sido eliminados correctamente.',
+                deletionErrorTitle: 'Error al eliminar datos',
+                deletionErrorMessage: 'Ocurrió un error al intentar eliminar los datos.'
+            },
             textAPIs: 'APIs de Texto',
             imageAPIs: 'APIs de Imágenes',
             imageProvider: 'Proveedor de Imágenes',
