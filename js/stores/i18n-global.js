@@ -9,6 +9,9 @@ window.i18nStore = {
     // Traducciones cargadas (se llenan dinámicamente)
     translations: {},
 
+    // Indicador de si las traducciones están listas
+    ready: false,
+
     // Idiomas disponibles
     availableLocales: [
         { code: 'es', name: 'Español', flag: '🇪🇸' },
@@ -96,8 +99,14 @@ window.i18nStore = {
             window.translations_en = translations;
         }
 
+        // Guardar también en this.translations para acceso directo
+        this.translations = translations;
+
         console.log(`✅ Traducciones cargadas:`, Object.keys(translations).length, 'módulos');
         console.log(`📚 Módulos disponibles:`, Object.keys(translations));
+
+        // Marcar como listo
+        this.ready = true;
     },
 
     // Cambiar idioma
@@ -125,13 +134,13 @@ window.i18nStore = {
 
     // Obtener traducción anidada
     getNestedTranslation(key) {
+        // Si no están listas las traducciones, retornar null
+        if (!this.ready) {
+            return null;
+        }
+
         const keys = key.split('.');
-        // Usar las traducciones globales
-        const translations = {
-            es: window.translations_es,
-            en: window.translations_en
-        };
-        let value = translations[this.currentLocale];
+        let value = this.translations;
 
         for (const k of keys) {
             if (value && typeof value === 'object') {
@@ -160,9 +169,27 @@ window.i18nStore = {
     }
 };
 
-// Auto-inicializar cuando se carga el script
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => window.i18nStore.init());
-} else {
-    window.i18nStore.init();
-}
+// Auto-inicializar cuando se carga el script y bloquear Alpine.js hasta que esté listo
+(async function() {
+    // Prevenir que Alpine.js se inicialice automáticamente
+    window.deferLoadingAlpine = function (callback) {
+        // Esperar a que las traducciones estén listas
+        window.i18nStore.init().then(() => {
+            console.log('🎉 Traducciones listas, iniciando Alpine.js...');
+            callback();
+        });
+    };
+
+    // Si Alpine ya está cargado, inicializar manualmente
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!window.Alpine) {
+                await window.i18nStore.init();
+            }
+        });
+    } else {
+        if (!window.Alpine) {
+            await window.i18nStore.init();
+        }
+    }
+})();
