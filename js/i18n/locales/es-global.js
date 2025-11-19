@@ -1,4 +1,5 @@
 // Traducciones en Español
+console.log('📚 Cargando traducciones ES...');
 window.translations_es = {
     // Común
     common: {
@@ -1303,3 +1304,4 @@ window.translations_es = {
         errorTooLarge: 'El archivo es muy grande'
     }
 };
+console.log('✅ Traducciones ES cargadas:', Object.keys(window.translations_es).length, 'secciones principales');

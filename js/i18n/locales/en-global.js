@@ -1,4 +1,5 @@
 // English Translations
+console.log('📚 Loading EN translations...');
 window.translations_en = {
     // Common
     common: {
@@ -1302,3 +1303,4 @@ window.translations_en = {
         errorTooLarge: 'File is too large'
     }
 };
+console.log('✅ EN translations loaded:', Object.keys(window.translations_en).length, 'main sections');
