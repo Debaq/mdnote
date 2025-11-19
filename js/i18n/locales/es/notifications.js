@@ -36,7 +36,9 @@ export default {
         treeCreated: 'Estructura creada exitosamente',
         treeCreatedDesc: 'Estructura {treeName} creada',
         treeFailed: 'Error creando estructura',
-        treeFailedDesc: 'No se pudo crear la estructura'
+        treeFailedDesc: 'No se pudo crear la estructura',
+        demoLoaded: 'Proyecto de demostración cargado',
+        demoLoadedDesc: 'Puedes explorar las funciones de PlumaAI con datos de ejemplo'
     },
     error: {
         generic: 'Ha ocurrido un error',
@@ -50,6 +52,8 @@ export default {
         commitFailedDesc: 'No se pudo crear el commit',
         checkoutFailed: 'Error en checkout',
         checkoutFailedDesc: 'No se pudo cambiar al estado del commit',
+        demoLoadFailed: 'Error al cargar proyecto de demostración',
+        demoLoadFailedDesc: 'No se pudo descargar el archivo de ejemplo. {message}',
         forkFailed: 'Error creando fork',
         forkFailedDesc: 'No se pudo crear el fork'
     }

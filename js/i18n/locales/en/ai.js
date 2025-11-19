@@ -20,6 +20,15 @@ export default {
         worldbuild: 'Expand worldbuilding',
         characterize: 'Develop character'
     },
+    systemPrompts: {
+        continue: 'You are a creative writing assistant. Your task is to continue the story in a coherent and creative manner, maintaining the established style, tone, and voice.',
+        suggest: 'You are a creative assistant that generates ideas and suggestions to develop the story. Provide varied and creative options.',
+        analyze: 'You are a literary editor. Analyze the text for inconsistencies, pacing issues, characterization, and opportunities for improvement.',
+        improve: 'You are an expert literary editor. Rewrite the selected passage improving the prose, pacing, and clarity without changing the original intent.',
+        dialogue: 'You are a dialogue specialist. Generate natural and characteristic dialogues for the characters, respecting their personality and background.',
+        worldbuild: 'You are a worldbuilding expert. Help expand and deepen the story world, creating coherent and rich details.',
+        characterize: 'You are a characterization expert. Help develop three-dimensional characters with coherent motivations, conflicts, and arcs.'
+    },
     prompt: {
         label: 'Instruction for AI',
         placeholder: 'Tell the AI what you want it to do...',
