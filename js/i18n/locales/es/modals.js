@@ -5,6 +5,7 @@ export default {
         title: '¡Bienvenido a PlumaAI!',
         subtitle: 'Editor de novelas con inteligencia artificial',
         description: 'Comienza creando un nuevo proyecto o carga uno existente',
+        selectLanguage: 'Selecciona tu idioma:',
         newProject: 'Crear Nuevo Proyecto',
         loadProject: 'Cargar Proyecto Existente',
         continueProject: 'Continuar con "{projectName}"',

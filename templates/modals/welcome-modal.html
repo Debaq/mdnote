@@ -7,6 +7,31 @@
             </div>
             <h2 x-text="$store.i18n.t('modals.welcome.title')">¡Bienvenido a PlumaAI!</h2>
             <p class="subtitle" x-text="$store.i18n.t('modals.welcome.subtitle')">Editor de novelas con inteligencia artificial</p>
+
+            <!-- Language Selector -->
+            <div class="language-selector" style="margin-top: 24px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;" x-text="$store.i18n.t('modals.welcome.selectLanguage')">Selecciona tu idioma:</label>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button
+                        @click="selectLanguage('es')"
+                        class="language-btn"
+                        :class="{ 'selected': selectedLanguage === 'es' }"
+                        style="padding: 12px 24px; border: 2px solid var(--border); border-radius: 8px; background: var(--background); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
+                    >
+                        <span style="font-size: 24px;">🇪🇸</span>
+                        <span>Español</span>
+                    </button>
+                    <button
+                        @click="selectLanguage('en')"
+                        class="language-btn"
+                        :class="{ 'selected': selectedLanguage === 'en' }"
+                        style="padding: 12px 24px; border: 2px solid var(--border); border-radius: 8px; background: var(--background); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
+                    >
+                        <span style="font-size: 24px;">🇬🇧</span>
+                        <span>English</span>
+                    </button>
+                </div>
+            </div>
         </div>
         <div class="modal-body">
             <div class="welcome-actions">

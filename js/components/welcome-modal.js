@@ -2,8 +2,12 @@
 window.welcomeModalComponent = function() {
     return {
         lastProject: null,
-        
+        selectedLanguage: null,
+
         async init() {
+            // Initialize selected language from current locale
+            this.selectedLanguage = Alpine.store('i18n').locale;
+
             // Cargar la lista de proyectos para ver si hay alguno reciente
             try {
                 if (window.storageManager) {
@@ -19,6 +23,12 @@ window.welcomeModalComponent = function() {
                 console.error('Error loading projects list in welcome modal:', error);
                 // No hacer nada, simplemente no mostrar el botón de proyecto reciente
             }
+        },
+
+        selectLanguage(lang) {
+            this.selectedLanguage = lang;
+            // Change the application language
+            Alpine.store('i18n').changeLocale(lang);
         },
         
         async loadLastProject() {
@@ -55,8 +65,8 @@ window.welcomeModalComponent = function() {
                 // Mostrar loading
                 Alpine.store('ui').startLoading('global');
 
-                // URL del archivo de ejemplo (ruta relativa)
-                const demoUrl = 'demo/ejemplo.pluma';
+                // URL del archivo de ejemplo (ruta relativa) based on selected language
+                const demoUrl = this.selectedLanguage === 'en' ? 'demo/example.pluma' : 'demo/ejemplo.pluma';
 
                 // Cargar el archivo de ejemplo
                 const response = await fetch(demoUrl);

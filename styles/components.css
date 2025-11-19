@@ -961,3 +961,41 @@ input:disabled + .slider {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Language Selector in Welcome Modal */
+.language-selector {
+    margin-top: 24px;
+}
+
+.language-btn {
+    padding: 12px 24px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.language-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.language-btn.selected {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb, 0, 0, 0), 0.3);
+}
+
+.language-btn.selected:hover {
+    background: var(--accent-hover, var(--accent));
+}
