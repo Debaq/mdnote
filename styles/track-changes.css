@@ -4,24 +4,6 @@
  */
 
 /* ============================================
-   TEXTO EDITADO POR EL USUARIO
-   ============================================ */
-
-/* Texto editado por el usuario - Color azul */
-.user-edited-text {
-    color: #60a5fa; /* Azul para cambios del usuario */
-    background: rgba(96, 165, 250, 0.08);
-    padding: 1px 2px;
-    border-radius: 2px;
-    position: relative;
-    transition: all 0.2s ease;
-}
-
-.user-edited-text:hover {
-    background: rgba(96, 165, 250, 0.15);
-}
-
-/* ============================================
    TEXTO GENERADO POR IA
    ============================================ */
 
@@ -106,7 +88,6 @@
    ============================================ */
 
 /* Cuando se ocultan los colores, todos los textos marcados se muestran normales */
-.rich-editor-content.hide-track-colors .user-edited-text,
 .rich-editor-content.hide-track-colors .ai-generated-text,
 .rich-editor-content.hide-track-colors .ai-inserted-text {
     color: inherit !important;
@@ -122,6 +103,10 @@
 }
 
 .rich-editor-content.hide-track-colors .ai-generated-text::before {
+    display: none !important;
+}
+
+.rich-editor-content.hide-track-colors .ai-change-group .ai-deleted-text {
     display: none !important;
 }
 
