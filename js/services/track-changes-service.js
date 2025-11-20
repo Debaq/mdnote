@@ -9,7 +9,8 @@ window.trackChangesService = {
     // ESTADO
     // ============================================
 
-    enabled: false, // Modo track changes activo/inactivo
+    editMode: false, // Modo edición activo/inactivo (false = readonly)
+    showColors: true, // Mostrar colores temporalmente (no se guarda)
     changes: [], // Registro de todos los cambios
     changeIdCounter: 0,
 
@@ -19,9 +20,11 @@ window.trackChangesService = {
     init() {
         console.log('🔍 Track Changes Service initialized');
 
-        // Cargar estado guardado
-        const savedEnabled = localStorage.getItem('track_changes_enabled');
-        this.enabled = savedEnabled === 'true';
+        // Por defecto, modo NO edición (readonly)
+        this.editMode = false;
+
+        // Mostrar colores por defecto
+        this.showColors = true;
 
         // Cargar cambios guardados (opcional)
         const savedChanges = localStorage.getItem('track_changes_list');
@@ -34,39 +37,98 @@ window.trackChangesService = {
                 this.changes = [];
             }
         }
+
+        // Escuchar cambios del usuario cuando está en modo edición
+        this.setupUserInputTracking();
     },
 
     /**
-     * Toggle del modo track changes
+     * Toggle del modo edición
      */
-    toggle() {
-        this.enabled = !this.enabled;
-        localStorage.setItem('track_changes_enabled', this.enabled);
-        console.log(`🔍 Track Changes Mode: ${this.enabled ? 'ENABLED' : 'DISABLED'}`);
-        return this.enabled;
+    toggleEditMode(editorElement) {
+        this.editMode = !this.editMode;
+
+        // Actualizar contenteditable del editor
+        if (editorElement) {
+            editorElement.contentEditable = this.editMode;
+
+            if (this.editMode) {
+                editorElement.classList.add('edit-mode-active');
+                editorElement.classList.remove('readonly-mode');
+            } else {
+                editorElement.classList.remove('edit-mode-active');
+                editorElement.classList.add('readonly-mode');
+            }
+        }
+
+        console.log(`✏️ Modo Edición: ${this.editMode ? 'ACTIVO' : 'READONLY'}`);
+        return this.editMode;
     },
 
     /**
-     * Activar modo track changes
+     * Verificar si está en modo edición
      */
-    enable() {
-        this.enabled = true;
-        localStorage.setItem('track_changes_enabled', 'true');
+    isEditMode() {
+        return this.editMode;
     },
 
     /**
-     * Desactivar modo track changes
+     * Toggle para mostrar/ocultar colores temporalmente
      */
-    disable() {
-        this.enabled = false;
-        localStorage.setItem('track_changes_enabled', 'false');
+    toggleShowColors(editorElement) {
+        this.showColors = !this.showColors;
+
+        if (editorElement) {
+            if (this.showColors) {
+                editorElement.classList.remove('hide-track-colors');
+            } else {
+                editorElement.classList.add('hide-track-colors');
+            }
+        }
+
+        console.log(`🎨 Mostrar colores: ${this.showColors ? 'SÍ' : 'NO (temporal)'}`);
+        return this.showColors;
+    },
+
+    // ============================================
+    // RASTREAR CAMBIOS DEL USUARIO
+    // ============================================
+
+    /**
+     * Configurar rastreo de input del usuario
+     */
+    setupUserInputTracking() {
+        // Se implementará con MutationObserver en el editor
+        console.log('📝 User input tracking configurado');
     },
 
     /**
-     * Verificar si el modo está activo
+     * Envolver texto del usuario con markup especial
      */
-    isEnabled() {
-        return this.enabled;
+    wrapUserText(text, metadata = {}) {
+        const span = document.createElement('span');
+        span.className = 'user-edited-text just-inserted';
+        span.textContent = text;
+
+        // Agregar metadata
+        span.dataset.userEdited = 'true';
+        span.dataset.timestamp = new Date().toISOString();
+
+        // Registrar cambio
+        const changeId = this.registerChange({
+            type: 'user-edit',
+            text: text,
+            metadata: metadata,
+            timestamp: new Date().toISOString()
+        });
+        span.dataset.changeId = changeId;
+
+        // Remover animación
+        setTimeout(() => {
+            span.classList.remove('just-inserted');
+        }, 1500);
+
+        return span;
     },
 
     // ============================================

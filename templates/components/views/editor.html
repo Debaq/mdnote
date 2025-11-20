@@ -10,31 +10,43 @@
             <div class="editor-main">
                 <!-- Track Changes Controls -->
                 <div x-data="trackChangesUI()" class="track-changes-controls" x-show="true">
-                    <!-- Toggle Mode -->
+                    <!-- Toggle Modo Edición -->
                     <button
                         type="button"
                         class="track-changes-toggle"
-                        :class="{ 'active': enabled }"
-                        @click="toggleMode()"
-                        title="Activar/Desactivar seguimiento de cambios de IA"
+                        :class="{ 'active': editMode }"
+                        @click="toggleEditMode()"
+                        :title="editMode ? 'Desactivar modo edición (readonly)' : 'Activar modo edición'"
                     >
-                        <i data-lucide="eye" width="14" height="14"></i>
-                        <span x-text="enabled ? 'Track Changes: ON' : 'Track Changes: OFF'"></span>
+                        <i :data-lucide="editMode ? 'edit-3' : 'lock'" width="16" height="16"></i>
                     </button>
 
-                    <!-- Accept All -->
+                    <!-- Toggle Mostrar/Ocultar Colores -->
+                    <button
+                        type="button"
+                        class="track-changes-toggle"
+                        :class="{ 'active': showColors }"
+                        @click="toggleColors()"
+                        :title="showColors ? 'Ocultar colores (temporal)' : 'Mostrar colores'"
+                    >
+                        <i :data-lucide="showColors ? 'eye' : 'eye-off'" width="16" height="16"></i>
+                    </button>
+
+                    <!-- Separador -->
+                    <div style="width: 1px; height: 24px; background: var(--border); margin: 0 4px;"></div>
+
+                    <!-- Aceptar Todos (Normalizar + Commit) -->
                     <button
                         type="button"
                         class="accept-all-changes-btn"
-                        @click="acceptAllChanges()"
+                        @click="acceptAllAndCommit()"
                         :disabled="pendingCount === 0"
-                        title="Aceptar todos los cambios"
+                        title="Aceptar todos los cambios y crear commit"
                     >
-                        <i data-lucide="check" width="14" height="14"></i>
-                        <span>Aceptar todos</span>
+                        <i data-lucide="check-circle" width="16" height="16"></i>
                     </button>
 
-                    <!-- Reject All -->
+                    <!-- Rechazar Todos -->
                     <button
                         type="button"
                         class="reject-all-changes-btn"
@@ -42,65 +54,27 @@
                         :disabled="pendingCount === 0"
                         title="Rechazar todos los cambios"
                     >
-                        <i data-lucide="x" width="14" height="14"></i>
-                        <span>Rechazar todos</span>
+                        <i data-lucide="x-circle" width="16" height="16"></i>
                     </button>
 
-                    <!-- Changes Count -->
-                    <div class="changes-count">
+                    <!-- Separador -->
+                    <div style="width: 1px; height: 24px; background: var(--border); margin: 0 4px;"></div>
+
+                    <!-- Contador de Cambios -->
+                    <div class="changes-count" title="Cambios pendientes">
                         <i data-lucide="list" width="14" height="14"></i>
-                        <span>Cambios pendientes:</span>
                         <span class="changes-count-number" x-text="pendingCount"></span>
                     </div>
 
-                    <!-- More Options (Dropdown) -->
-                    <div style="position: relative; margin-left: 8px;" x-data="{ open: false }">
-                        <button
-                            type="button"
-                            class="track-changes-toggle"
-                            @click="open = !open"
-                            title="Más opciones"
-                        >
-                            <i data-lucide="more-vertical" width="14" height="14"></i>
-                        </button>
-
-                        <!-- Dropdown Menu -->
-                        <div
-                            x-show="open"
-                            @click.outside="open = false"
-                            x-transition
-                            style="position: absolute; right: 0; top: 100%; margin-top: 4px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); min-width: 180px; z-index: 1000; padding: 4px;"
-                        >
-                            <button
-                                type="button"
-                                @click="viewStats(); open = false"
-                                style="width: 100%; text-align: left; padding: 8px 12px; background: transparent; border: none; color: var(--text-primary); cursor: pointer; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 8px;"
-                                onmouseover="this.style.background='var(--bg-tertiary)'"
-                                onmouseout="this.style.background='transparent'"
-                            >
-                                <i data-lucide="bar-chart" width="14" height="14"></i>
-                                <span>Ver estadísticas</span>
-                            </button>
-                            <button
-                                type="button"
-                                @click="exportHistory(); open = false"
-                                style="width: 100%; text-align: left; padding: 8px 12px; background: transparent; border: none; color: var(--text-primary); cursor: pointer; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 8px;"
-                                onmouseover="this.style.background='var(--bg-tertiary)'"
-                                onmouseout="this.style.background='transparent'"
-                            >
-                                <i data-lucide="download" width="14" height="14"></i>
-                                <span>Exportar historial</span>
-                            </button>
-                            <button
-                                type="button"
-                                @click="clearHistory(); open = false"
-                                style="width: 100%; text-align: left; padding: 8px 12px; background: transparent; border: none; color: var(--text-secondary); cursor: pointer; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 8px;"
-                                onmouseover="this.style.background='var(--bg-tertiary)'"
-                                onmouseout="this.style.background='transparent'"
-                            >
-                                <i data-lucide="trash-2" width="14" height="14"></i>
-                                <span>Limpiar historial</span>
-                            </button>
+                    <!-- Leyenda de Colores -->
+                    <div style="display: flex; align-items: center; gap: 12px; margin-left: auto; font-size: 11px;">
+                        <div style="display: flex; align-items: center; gap: 4px;" title="Tus cambios">
+                            <div style="width: 12px; height: 12px; background: #60a5fa; border-radius: 2px;"></div>
+                            <span style="color: var(--text-secondary);">Usuario</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 4px;" title="Cambios de la IA">
+                            <div style="width: 12px; height: 12px; background: #a78bfa; border-radius: 2px;"></div>
+                            <span style="color: var(--text-secondary);">IA</span>
                         </div>
                     </div>
                 </div>

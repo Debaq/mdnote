@@ -6,7 +6,8 @@
 window.trackChangesUI = function() {
     return {
         // Estado
-        enabled: false,
+        editMode: false,
+        showColors: true,
         pendingCount: 0,
         updateInterval: null,
 
@@ -16,7 +17,15 @@ window.trackChangesUI = function() {
         init() {
             // Cargar estado inicial del servicio
             if (window.trackChangesService) {
-                this.enabled = window.trackChangesService.isEnabled();
+                this.editMode = window.trackChangesService.isEditMode();
+                this.showColors = window.trackChangesService.showColors;
+            }
+
+            // Por defecto, el editor está en modo readonly
+            const editorElement = document.querySelector('.rich-editor-content');
+            if (editorElement) {
+                editorElement.contentEditable = false;
+                editorElement.classList.add('readonly-mode');
             }
 
             // Actualizar contador cada segundo
@@ -24,11 +33,6 @@ window.trackChangesUI = function() {
             this.updateInterval = setInterval(() => {
                 this.updatePendingCount();
             }, 1000);
-
-            // Aplicar clase al editor si está habilitado
-            this.$nextTick(() => {
-                this.updateEditorClass();
-            });
         },
 
         /**
@@ -54,65 +58,94 @@ window.trackChangesUI = function() {
         },
 
         /**
-         * Toggle del modo track changes
+         * Toggle del modo edición
          */
-        toggleMode() {
+        toggleEditMode() {
             if (!window.trackChangesService) {
                 console.warn('⚠️ Track Changes Service not available');
                 return;
             }
 
-            this.enabled = window.trackChangesService.toggle();
-            this.updateEditorClass();
+            const editorElement = document.querySelector('.rich-editor-content');
+            this.editMode = window.trackChangesService.toggleEditMode(editorElement);
 
             // Notificar al usuario
             if (this.$store && this.$store.ui) {
-                if (this.enabled) {
+                if (this.editMode) {
                     this.$store.ui.success(
-                        'Modo Track Changes',
-                        'Los cambios de la IA ahora se mostrarán con colores distintos'
+                        'Modo Edición',
+                        'Ahora puedes editar el texto. Tus cambios se marcarán en azul.'
                     );
                 } else {
                     this.$store.ui.info(
-                        'Modo Track Changes',
-                        'Modo desactivado. Los cambios de la IA se insertarán normalmente'
+                        'Modo Readonly',
+                        'El editor está bloqueado. Activa el modo edición para modificar el texto.'
                     );
                 }
             }
+
+            // Reinicializar iconos de Lucide
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 50);
         },
 
         /**
-         * Actualizar clase del editor según el estado
+         * Toggle para mostrar/ocultar colores
          */
-        updateEditorClass() {
-            const editorElement = document.querySelector('.rich-editor-content');
-            if (!editorElement) return;
-
-            if (this.enabled) {
-                editorElement.classList.add('track-changes-mode');
-            } else {
-                editorElement.classList.remove('track-changes-mode');
+        toggleColors() {
+            if (!window.trackChangesService) {
+                console.warn('⚠️ Track Changes Service not available');
+                return;
             }
+
+            const editorElement = document.querySelector('.rich-editor-content');
+            this.showColors = window.trackChangesService.toggleShowColors(editorElement);
+
+            // Notificar al usuario
+            if (this.$store && this.$store.ui) {
+                if (this.showColors) {
+                    this.$store.ui.info(
+                        'Colores Activados',
+                        'Los cambios vuelven a ser visibles con colores'
+                    );
+                } else {
+                    this.$store.ui.info(
+                        'Colores Ocultos',
+                        'Los colores están ocultos temporalmente. No se guardará esta preferencia.'
+                    );
+                }
+            }
+
+            // Reinicializar iconos de Lucide
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 50);
         },
 
         /**
-         * Aceptar todos los cambios
+         * Aceptar todos los cambios Y hacer commit automático
          */
-        acceptAllChanges() {
+        async acceptAllAndCommit() {
             if (!window.trackChangesService) return;
 
             const editorElement = document.querySelector('.rich-editor-content');
             if (!editorElement) return;
 
             // Confirmar con el usuario
-            if (this.$store && this.$store.ui) {
-                const confirmed = confirm(
-                    `¿Estás seguro de que quieres aceptar todos los ${this.pendingCount} cambios?\n\n` +
-                    'Esto eliminará los tachados y conservará solo el texto nuevo.'
-                );
+            const confirmed = confirm(
+                `¿Aceptar todos los ${this.pendingCount} cambios y crear un commit?\n\n` +
+                'Esto:\n' +
+                '1. Normalizará todos los colores del texto\n' +
+                '2. Guardará el capítulo\n' +
+                '3. Creará un commit automático en Git'
+            );
 
-                if (!confirmed) return;
-            }
+            if (!confirmed) return;
 
             // Aceptar cambios
             const count = window.trackChangesService.acceptAllChanges(editorElement);
@@ -123,15 +156,55 @@ window.trackChangesUI = function() {
                 editorInstance.editor.onContentChange(editorInstance.editor.getContent());
             }
 
+            // Esperar un momento para que se guarde
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Crear commit automático
+            await this.createAutoCommit(count);
+
             // Actualizar contador
             this.updatePendingCount();
 
             // Notificar
             if (this.$store && this.$store.ui) {
                 this.$store.ui.success(
-                    'Cambios Aceptados',
-                    `Se aceptaron ${count} cambios. El texto se ha normalizado.`
+                    'Cambios Aceptados y Commiteados',
+                    `Se aceptaron ${count} cambios y se creó un commit automático.`
                 );
+            }
+        },
+
+        /**
+         * Crear commit automático
+         */
+        async createAutoCommit(changeCount) {
+            try {
+                // Obtener información del capítulo
+                const chapterTitle = this.$store?.ui?.currentEditingChapterId
+                    ? this.$store.project.getChapter(this.$store.ui.currentEditingChapterId)?.title
+                    : 'Capítulo';
+
+                // Mensaje de commit
+                const commitMessage = `Aceptar ${changeCount} cambios en "${chapterTitle}"
+
+Cambios aceptados y normalizados automáticamente.
+Fecha: ${new Date().toISOString()}`;
+
+                // Ejecutar git add y commit (usando el store de version control si existe)
+                if (this.$store && this.$store.versionControl) {
+                    await this.$store.versionControl.createCommit(commitMessage);
+                    console.log('✅ Commit automático creado');
+                } else {
+                    console.warn('⚠️ Version control store no disponible');
+                }
+            } catch (error) {
+                console.error('❌ Error creando commit automático:', error);
+                if (this.$store && this.$store.ui) {
+                    this.$store.ui.error(
+                        'Error en Commit',
+                        'No se pudo crear el commit automático. Los cambios se guardaron pero no se commitearon.'
+                    );
+                }
             }
         },
 
