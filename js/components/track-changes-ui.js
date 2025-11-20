@@ -21,18 +21,47 @@ window.trackChangesUI = function() {
                 this.showColors = window.trackChangesService.showColors;
             }
 
-            // Por defecto, el editor está en modo readonly
-            const editorElement = document.querySelector('.rich-editor-content');
-            if (editorElement) {
-                editorElement.contentEditable = false;
-                editorElement.classList.add('readonly-mode');
-            }
+            // Aplicar modo readonly con un pequeño delay para asegurar que el editor esté inicializado
+            this.applyReadonlyMode();
 
             // Actualizar contador cada segundo
             this.updatePendingCount();
             this.updateInterval = setInterval(() => {
                 this.updatePendingCount();
             }, 1000);
+        },
+
+        /**
+         * Aplicar modo readonly al editor (con reintentos)
+         */
+        applyReadonlyMode() {
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            const tryApply = () => {
+                const editorElement = document.querySelector('.rich-editor-content');
+
+                if (editorElement) {
+                    // Aplicar readonly si el servicio está en modo no-edición
+                    if (!this.editMode) {
+                        editorElement.contentEditable = false;
+                        editorElement.classList.add('readonly-mode');
+                        editorElement.classList.remove('edit-mode-active');
+                        console.log('✅ Track Changes UI: Modo readonly aplicado');
+                    }
+                } else {
+                    // Si no existe aún, reintentar
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(tryApply, 200);
+                    } else {
+                        console.warn('⚠️ Track Changes UI: No se encontró el editor después de múltiples intentos');
+                    }
+                }
+            };
+
+            // Primer intento inmediato
+            tryApply();
         },
 
         /**

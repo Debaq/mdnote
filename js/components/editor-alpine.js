@@ -138,6 +138,18 @@ window.editorAlpineComponent = function() {
             });
 
             this.editorReady = true;
+
+            // Aplicar modo readonly por defecto (para Track Changes)
+            this.$nextTick(() => {
+                const editorElement = this.editor?.editor;
+                if (editorElement && window.trackChangesService) {
+                    // Asegurar que el editor inicia en modo readonly
+                    editorElement.contentEditable = false;
+                    editorElement.classList.add('readonly-mode');
+                    editorElement.classList.remove('edit-mode-active');
+                    console.log('✅ Editor inicializado en modo readonly');
+                }
+            });
         },
 
         /**
