@@ -309,24 +309,81 @@ window.trackChangesService = {
                     return;
                 }
 
-                // Crear span tachado
-                const deletedSpan = document.createElement('span');
-                deletedSpan.className = 'ai-deleted-text just-deleted';
-                deletedSpan.textContent = charToDelete;
-                deletedSpan.dataset.deleted = 'true';
-                deletedSpan.dataset.deletedBy = 'user';
-                deletedSpan.dataset.timestamp = new Date().toISOString();
+                // Verificar si hay un span tachado justo antes (para backspace) o después (para delete)
+                let existingDeletedSpan = null;
+                const cursorNode = range.startContainer;
 
-                // Reemplazar con span tachado
-                range.deleteContents();
-                range.insertNode(deletedSpan);
+                if (isBackspace) {
+                    // Backspace: buscar span tachado justo antes del cursor
+                    const previousSibling = cursorNode.previousSibling;
+                    if (previousSibling &&
+                        previousSibling.nodeType === Node.ELEMENT_NODE &&
+                        previousSibling.classList?.contains('ai-deleted-text')) {
+                        existingDeletedSpan = previousSibling;
+                    }
+                } else {
+                    // Delete: buscar span tachado justo después del cursor
+                    const nextSibling = cursorNode.nextSibling;
+                    if (nextSibling &&
+                        nextSibling.nodeType === Node.ELEMENT_NODE &&
+                        nextSibling.classList?.contains('ai-deleted-text')) {
+                        existingDeletedSpan = nextSibling;
+                    }
+                }
 
-                // Mover cursor ANTES del span (para poder seguir borrando)
-                const newRange = document.createRange();
-                newRange.setStartBefore(deletedSpan);
-                newRange.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(newRange);
+                // Si hay un span tachado adyacente, agregar a ese span
+                if (existingDeletedSpan) {
+                    range.deleteContents();
+
+                    if (isBackspace) {
+                        // Agregar al final del span existente
+                        existingDeletedSpan.textContent += charToDelete;
+                    } else {
+                        // Agregar al inicio del span existente
+                        existingDeletedSpan.textContent = charToDelete + existingDeletedSpan.textContent;
+                    }
+
+                    // Agregar animación temporal
+                    existingDeletedSpan.classList.add('just-deleted');
+                    setTimeout(() => {
+                        existingDeletedSpan.classList.remove('just-deleted');
+                    }, 1500);
+
+                    // Mover cursor ANTES del span
+                    const newRange = document.createRange();
+                    newRange.setStartBefore(existingDeletedSpan);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+
+                    console.log('✅ Character added to existing strikethrough span:', charToDelete);
+                } else {
+                    // No hay span adyacente, crear uno nuevo
+                    const deletedSpan = document.createElement('span');
+                    deletedSpan.className = 'ai-deleted-text just-deleted';
+                    deletedSpan.textContent = charToDelete;
+                    deletedSpan.dataset.deleted = 'true';
+                    deletedSpan.dataset.deletedBy = 'user';
+                    deletedSpan.dataset.timestamp = new Date().toISOString();
+
+                    // Reemplazar con span tachado
+                    range.deleteContents();
+                    range.insertNode(deletedSpan);
+
+                    // Mover cursor ANTES del span (para poder seguir borrando)
+                    const newRange = document.createRange();
+                    newRange.setStartBefore(deletedSpan);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+
+                    // Remover animación
+                    setTimeout(() => {
+                        deletedSpan.classList.remove('just-deleted');
+                    }, 1500);
+
+                    console.log('✅ Character marked as strikethrough:', charToDelete);
+                }
 
                 // Registrar cambio
                 this.registerChange({
@@ -334,13 +391,6 @@ window.trackChangesService = {
                     text: charToDelete,
                     timestamp: new Date().toISOString()
                 });
-
-                // Remover animación
-                setTimeout(() => {
-                    deletedSpan.classList.remove('just-deleted');
-                }, 1500);
-
-                console.log('✅ Character marked as strikethrough:', charToDelete);
             }
         } catch (error) {
             console.error('❌ Error en handleUserDeletion:', error);
