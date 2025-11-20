@@ -143,11 +143,16 @@ window.editorAlpineComponent = function() {
             this.$nextTick(() => {
                 const editorElement = this.editor?.editor;
                 if (editorElement && window.trackChangesService) {
+                    // Establecer el capítulo actual en el servicio de track changes
+                    if (this.currentChapter?.id) {
+                        window.trackChangesService.setCurrentChapter(this.currentChapter.id);
+                    }
+
                     // Asegurar que el editor inicia en modo readonly
                     editorElement.contentEditable = false;
                     editorElement.classList.add('readonly-mode');
                     editorElement.classList.remove('edit-mode-active');
-                    console.log('✅ Editor inicializado en modo readonly');
+                    console.log('✅ Editor inicializado en modo readonly para capítulo:', this.currentChapter?.id);
                 }
             });
         },
