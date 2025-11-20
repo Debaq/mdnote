@@ -774,7 +774,13 @@ window.editorAlpineComponent = function() {
                 });
 
                 // INSERTAR al final del contenido
-                this.insertAtEnd(response.content || response.prompt);
+                const metadata = {
+                    provider: response.provider,
+                    model: response.model,
+                    type: response.type,
+                    mode: 'continue'
+                };
+                this.insertAtEnd(response.content || response.prompt, metadata);
 
                 // Marcar conversación como usada
                 window.aiConversationsService.markAsUsed(conversation, 'end');
@@ -978,7 +984,13 @@ window.editorAlpineComponent = function() {
                 });
 
                 // INSERTAR en la posición del cursor
-                this.insertAtCursor(response.content || response.prompt);
+                const metadata = {
+                    provider: response.provider,
+                    model: response.model,
+                    type: response.type,
+                    mode: 'continue'
+                };
+                this.insertAtCursor(response.content || response.prompt, metadata);
 
                 // Marcar conversación como usada
                 window.aiConversationsService.markAsUsed(conversation, 'cursor');
@@ -1136,7 +1148,13 @@ window.editorAlpineComponent = function() {
                 newInsertBtn.onclick = () => {
                     if (window.activeChapterEditorInstance) {
                         const text = modal.querySelector('.ai-response-text').textContent;
-                        window.activeChapterEditorInstance.insertAtCursor(text);
+                        // Obtener metadata del modal
+                        const provider = modal.querySelector('.ai-provider').textContent;
+                        const model = modal.querySelector('.ai-model').textContent;
+                        const type = modal.querySelector('.ai-type').textContent;
+                        const metadata = { provider, model, type };
+
+                        window.activeChapterEditorInstance.insertAtCursor(text, metadata);
                         modalOverlay.style.display = 'none';
                         window.activeChapterEditorInstance.$store.ui.success(
                             'IA',
@@ -1160,34 +1178,54 @@ window.editorAlpineComponent = function() {
         /**
          * Insertar texto al final del contenido del editor
          */
-        insertAtEnd(text) {
+        insertAtEnd(text, metadata = {}) {
             if (!this.editor || !text) return;
 
-            // Obtener contenido actual
-            const currentContent = this.editor.getContent();
+            const editorElement = this.editor.editor;
+            if (!editorElement) return;
 
-            // Agregar texto al final con saltos de línea
-            const newContent = currentContent + '\n\n' + text;
+            // Verificar si hay trackChangesService disponible
+            if (window.trackChangesService) {
+                // Mover cursor al final
+                const range = document.createRange();
+                range.selectNodeContents(editorElement);
+                range.collapse(false);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
 
-            // Actualizar contenido del editor
-            this.editor.setContent(newContent);
+                // Insertar con tracking al final
+                window.trackChangesService.insertAIText(editorElement, text, metadata);
 
-            // Hacer scroll al final
-            if (this.editor.editor) {
-                this.editor.editor.scrollTop = this.editor.editor.scrollHeight;
-                this.editor.editor.focus();
-            }
+                // Hacer scroll al final
+                editorElement.scrollTop = editorElement.scrollHeight;
+                editorElement.focus();
 
-            // Trigger content change para que se guarde
-            if (this.editor.onContentChange) {
-                this.editor.onContentChange(newContent);
+                // Trigger content change
+                if (this.editor.onContentChange) {
+                    this.editor.onContentChange(this.editor.getContent());
+                }
+            } else {
+                // Fallback: inserción tradicional sin tracking
+                const currentContent = this.editor.getContent();
+                const newContent = currentContent + '\n\n' + text;
+                this.editor.setContent(newContent);
+
+                if (editorElement) {
+                    editorElement.scrollTop = editorElement.scrollHeight;
+                    editorElement.focus();
+                }
+
+                if (this.editor.onContentChange) {
+                    this.editor.onContentChange(newContent);
+                }
             }
         },
 
         /**
          * Insertar texto de IA en la posición del cursor DENTRO DEL EDITOR
          */
-        insertAtCursor(text) {
+        insertAtCursor(text, metadata = {}) {
             if (!this.editor || !text) return;
 
             const editorElement = this.editor.editor;
@@ -1196,52 +1234,63 @@ window.editorAlpineComponent = function() {
             // Focus en el editor primero
             editorElement.focus();
 
-            // Obtener selección
-            const sel = window.getSelection();
-            let range;
+            // Verificar si hay trackChangesService disponible
+            if (window.trackChangesService) {
+                // Obtener selección
+                const sel = window.getSelection();
+                const selectedText = sel.toString();
 
-            // Verificar si la selección está dentro del editor
-            if (sel.rangeCount > 0) {
-                range = sel.getRangeAt(0);
-                // Verificar si el range está dentro del editor
-                if (!editorElement.contains(range.commonAncestorContainer)) {
-                    // Si no está dentro del editor, crear un range al final
+                // Si hay texto seleccionado, reemplazarlo con tracking
+                if (selectedText && !sel.isCollapsed) {
+                    window.trackChangesService.replaceSelectedText(editorElement, text, metadata);
+                } else {
+                    // Sino, insertar con tracking
+                    window.trackChangesService.insertAIText(editorElement, text, metadata);
+                }
+
+                // Trigger content change
+                if (this.editor.onContentChange) {
+                    this.editor.onContentChange(this.editor.getContent());
+                }
+            } else {
+                // Fallback: inserción tradicional sin tracking
+                const sel = window.getSelection();
+                let range;
+
+                if (sel.rangeCount > 0) {
+                    range = sel.getRangeAt(0);
+                    if (!editorElement.contains(range.commonAncestorContainer)) {
+                        range = document.createRange();
+                        range.selectNodeContents(editorElement);
+                        range.collapse(false);
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    }
+                } else {
                     range = document.createRange();
                     range.selectNodeContents(editorElement);
                     range.collapse(false);
                     sel.removeAllRanges();
                     sel.addRange(range);
                 }
-            } else {
-                // No hay selección, crear una al final del editor
-                range = document.createRange();
-                range.selectNodeContents(editorElement);
-                range.collapse(false);
+
+                if (!sel.isCollapsed) {
+                    range.deleteContents();
+                }
+
+                const textNode = document.createTextNode('\n\n' + text);
+                range.insertNode(textNode);
+
+                range.setStartAfter(textNode);
+                range.setEndAfter(textNode);
                 sel.removeAllRanges();
                 sel.addRange(range);
+
+                if (this.editor.onContentChange) {
+                    this.editor.onContentChange(this.editor.getContent());
+                }
             }
 
-            // Si hay texto seleccionado, eliminarlo
-            if (!sel.isCollapsed) {
-                range.deleteContents();
-            }
-
-            // Insertar texto de IA
-            const textNode = document.createTextNode('\n\n' + text);
-            range.insertNode(textNode);
-
-            // Mover cursor al final del texto insertado
-            range.setStartAfter(textNode);
-            range.setEndAfter(textNode);
-            sel.removeAllRanges();
-            sel.addRange(range);
-
-            // Trigger content change para que se guarde
-            if (this.editor.onContentChange) {
-                this.editor.onContentChange(this.editor.getContent());
-            }
-
-            // Focus en el editor
             editorElement.focus();
         },
 
