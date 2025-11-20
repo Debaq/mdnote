@@ -305,6 +305,46 @@ window.trackChangesService = {
     },
 
     /**
+     * Fusionar spans tachados consecutivos en el editor
+     */
+    mergeConsecutiveDeletedSpans(editorElement) {
+        if (!editorElement) return;
+
+        const deletedSpans = editorElement.querySelectorAll('.ai-deleted-text');
+
+        deletedSpans.forEach(span => {
+            // Buscar el siguiente sibling que sea también un span tachado
+            let nextSibling = span.nextSibling;
+
+            // Saltar text nodes vacíos o con solo espacios
+            while (nextSibling &&
+                   nextSibling.nodeType === Node.TEXT_NODE &&
+                   !nextSibling.textContent.trim()) {
+                nextSibling = nextSibling.nextSibling;
+            }
+
+            // Si el siguiente es también un span tachado, fusionarlos
+            if (nextSibling &&
+                nextSibling.nodeType === Node.ELEMENT_NODE &&
+                nextSibling.classList?.contains('ai-deleted-text')) {
+
+                // Fusionar el contenido
+                span.textContent += nextSibling.textContent;
+
+                // Mantener la animación si alguno la tiene
+                if (nextSibling.classList.contains('just-deleted')) {
+                    span.classList.add('just-deleted');
+                }
+
+                // Eliminar el siguiente span
+                nextSibling.remove();
+
+                console.log('🔗 Fusionados spans tachados consecutivos');
+            }
+        });
+    },
+
+    /**
      * Manejar eliminación del usuario: convertir texto a tachado
      */
     handleUserDeletion(editorElement) {
@@ -348,6 +388,9 @@ window.trackChangesService = {
                 deletedSpan.classList.remove('just-deleted');
             }, 1500);
 
+            // Fusionar spans consecutivos
+            this.mergeConsecutiveDeletedSpans(editorElement);
+
             console.log('✅ User deletion marked as strikethrough:', selectedText.substring(0, 20));
             return;
         }
@@ -375,25 +418,46 @@ window.trackChangesService = {
                     return;
                 }
 
-                // Verificar si hay un span tachado justo antes (para backspace) o después (para delete)
+                // Buscar span tachado adyacente de forma más robusta
                 let existingDeletedSpan = null;
                 const cursorNode = range.startContainer;
 
                 if (isBackspace) {
                     // Backspace: buscar span tachado justo antes del cursor
-                    const previousSibling = cursorNode.previousSibling;
-                    if (previousSibling &&
-                        previousSibling.nodeType === Node.ELEMENT_NODE &&
-                        previousSibling.classList?.contains('ai-deleted-text')) {
-                        existingDeletedSpan = previousSibling;
+                    // Primero intentar con previousSibling directo
+                    let node = cursorNode.previousSibling;
+
+                    // Si cursorNode es un text node, buscar en el parent
+                    if (!node && cursorNode.nodeType === Node.TEXT_NODE) {
+                        const parent = cursorNode.parentNode;
+                        if (parent) {
+                            node = parent.previousSibling;
+                        }
+                    }
+
+                    // Verificar si el nodo encontrado es un span tachado
+                    if (node &&
+                        node.nodeType === Node.ELEMENT_NODE &&
+                        node.classList?.contains('ai-deleted-text')) {
+                        existingDeletedSpan = node;
                     }
                 } else {
                     // Delete: buscar span tachado justo después del cursor
-                    const nextSibling = cursorNode.nextSibling;
-                    if (nextSibling &&
-                        nextSibling.nodeType === Node.ELEMENT_NODE &&
-                        nextSibling.classList?.contains('ai-deleted-text')) {
-                        existingDeletedSpan = nextSibling;
+                    let node = cursorNode.nextSibling;
+
+                    // Si cursorNode es un text node, buscar en el parent
+                    if (!node && cursorNode.nodeType === Node.TEXT_NODE) {
+                        const parent = cursorNode.parentNode;
+                        if (parent) {
+                            node = parent.nextSibling;
+                        }
+                    }
+
+                    // Verificar si el nodo encontrado es un span tachado
+                    if (node &&
+                        node.nodeType === Node.ELEMENT_NODE &&
+                        node.classList?.contains('ai-deleted-text')) {
+                        existingDeletedSpan = node;
                     }
                 }
 
@@ -457,6 +521,11 @@ window.trackChangesService = {
                     text: charToDelete,
                     timestamp: new Date().toISOString()
                 });
+
+                // Fusionar spans consecutivos después de eliminar
+                setTimeout(() => {
+                    this.mergeConsecutiveDeletedSpans(editorElement);
+                }, 10);
             }
         } catch (error) {
             console.error('❌ Error en handleUserDeletion:', error);
