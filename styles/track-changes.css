@@ -4,6 +4,24 @@
  */
 
 /* ============================================
+   TEXTO EDITADO POR USUARIO
+   ============================================ */
+
+/* Texto insertado por el usuario - Color verde */
+.user-edited-text {
+    color: #10b981; /* Verde para texto del usuario */
+    background: rgba(16, 185, 129, 0.08);
+    padding: 1px 2px;
+    border-radius: 2px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.user-edited-text:hover {
+    background: rgba(16, 185, 129, 0.15);
+}
+
+/* ============================================
    TEXTO GENERADO POR IA
    ============================================ */
 
@@ -89,7 +107,8 @@
 
 /* Cuando se ocultan los colores, todos los textos marcados se muestran normales */
 .rich-editor-content.hide-track-colors .ai-generated-text,
-.rich-editor-content.hide-track-colors .ai-inserted-text {
+.rich-editor-content.hide-track-colors .ai-inserted-text,
+.rich-editor-content.hide-track-colors .user-edited-text {
     color: inherit !important;
     background: transparent !important;
     border-bottom: none !important;
@@ -304,6 +323,21 @@
    ANIMACIONES
    ============================================ */
 
+/* Animación para texto del usuario (verde) */
+@keyframes fadeInUserText {
+    0% {
+        background: rgba(16, 185, 129, 0.4);
+    }
+    100% {
+        background: rgba(16, 185, 129, 0.08);
+    }
+}
+
+.user-edited-text.just-inserted {
+    animation: fadeInUserText 1.5s ease-out;
+}
+
+/* Animación para texto de IA (púrpura) */
 @keyframes fadeInHighlight {
     0% {
         background: rgba(167, 139, 250, 0.3);
@@ -317,6 +351,7 @@
     animation: fadeInHighlight 1.5s ease-out;
 }
 
+/* Animación para texto insertado en reemplazo (verde) */
 @keyframes fadeInChange {
     0% {
         background: rgba(16, 185, 129, 0.3);
@@ -328,6 +363,20 @@
 
 .ai-inserted-text.just-inserted {
     animation: fadeInChange 1.5s ease-out;
+}
+
+/* Animación para texto eliminado/tachado (rojo) */
+@keyframes fadeInDeleted {
+    0% {
+        background: rgba(239, 68, 68, 0.3);
+    }
+    100% {
+        background: rgba(239, 68, 68, 0.08);
+    }
+}
+
+.ai-deleted-text.just-deleted {
+    animation: fadeInDeleted 1.5s ease-out;
 }
 
 /* ============================================
@@ -357,6 +406,11 @@
    ============================================ */
 
 /* Ajustes para modo claro (si se implementa) */
+[data-theme="light"] .user-edited-text {
+    color: #059669;
+    background: rgba(5, 150, 105, 0.08);
+}
+
 [data-theme="light"] .ai-generated-text {
     color: #7c3aed;
     background: rgba(124, 58, 237, 0.08);

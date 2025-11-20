@@ -98,8 +98,175 @@ window.trackChangesService = {
      * Configurar rastreo de input del usuario
      */
     setupUserInputTracking() {
-        // Se implementará con MutationObserver en el editor
+        // Escuchar evento beforeinput para interceptar cambios del usuario
+        document.addEventListener('beforeinput', (e) => {
+            // Solo trackear si está en modo edición
+            if (!this.editMode) return;
+
+            const target = e.target;
+            // Verificar que sea el editor
+            if (!target || !target.classList.contains('rich-editor-content')) return;
+
+            const inputType = e.inputType;
+
+            // INSERCIÓN DE TEXTO: envolver en verde
+            if (inputType === 'insertText' || inputType === 'insertFromPaste') {
+                // El texto ya se insertará normalmente, pero necesitamos envolverlo después
+                setTimeout(() => {
+                    this.wrapLastInsertedText(target);
+                }, 10);
+            }
+            // ELIMINACIÓN DE TEXTO: convertir a tachado
+            else if (inputType.startsWith('delete')) {
+                e.preventDefault(); // Prevenir eliminación normal
+                this.handleUserDeletion(target);
+            }
+        });
+
         console.log('📝 User input tracking configurado');
+    },
+
+    /**
+     * Envolver el último texto insertado por el usuario
+     */
+    wrapLastInsertedText(editorElement) {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+
+        const range = sel.getRangeAt(0);
+        const cursorNode = range.startContainer;
+
+        // Si es un text node simple (no marcado), envolverlo
+        if (cursorNode.nodeType === Node.TEXT_NODE &&
+            cursorNode.parentNode === editorElement) {
+
+            const text = cursorNode.textContent;
+            if (!text) return;
+
+            // Crear span verde para texto del usuario
+            const span = document.createElement('span');
+            span.className = 'user-edited-text just-inserted';
+            span.textContent = text;
+            span.dataset.userEdited = 'true';
+            span.dataset.timestamp = new Date().toISOString();
+
+            // Reemplazar text node con span
+            cursorNode.parentNode.replaceChild(span, cursorNode);
+
+            // Restaurar cursor al final del span
+            range.setStart(span.firstChild || span, text.length);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            // Registrar cambio
+            this.registerChange({
+                type: 'user-insert',
+                text: text,
+                timestamp: new Date().toISOString()
+            });
+
+            // Remover animación
+            setTimeout(() => {
+                span.classList.remove('just-inserted');
+            }, 1500);
+
+            console.log('✅ User text wrapped in green:', text.substring(0, 20));
+        }
+    },
+
+    /**
+     * Manejar eliminación del usuario: convertir texto a tachado
+     */
+    handleUserDeletion(editorElement) {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+
+        const range = sel.getRangeAt(0);
+
+        // Si hay selección, tachar el texto seleccionado
+        if (!range.collapsed) {
+            const selectedText = range.toString();
+            if (!selectedText) return;
+
+            // Crear span tachado
+            const deletedSpan = document.createElement('span');
+            deletedSpan.className = 'ai-deleted-text just-deleted';
+            deletedSpan.textContent = selectedText;
+            deletedSpan.dataset.deleted = 'true';
+            deletedSpan.dataset.deletedBy = 'user';
+            deletedSpan.dataset.timestamp = new Date().toISOString();
+
+            // Reemplazar selección con span tachado
+            range.deleteContents();
+            range.insertNode(deletedSpan);
+
+            // Mover cursor después del span
+            range.setStartAfter(deletedSpan);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            // Registrar cambio
+            this.registerChange({
+                type: 'user-delete',
+                text: selectedText,
+                timestamp: new Date().toISOString()
+            });
+
+            // Remover animación
+            setTimeout(() => {
+                deletedSpan.classList.remove('just-deleted');
+            }, 1500);
+
+            console.log('✅ User deletion marked as strikethrough:', selectedText.substring(0, 20));
+        }
+        // Si no hay selección, eliminar un carácter antes del cursor (backspace) o después (delete)
+        else {
+            // Determinar dirección de la eliminación
+            const isBackspace = window.event?.inputType === 'deleteContentBackward';
+
+            if (isBackspace) {
+                // Mover cursor un carácter atrás
+                range.setStart(range.startContainer, Math.max(0, range.startOffset - 1));
+            } else {
+                // Mover cursor un carácter adelante
+                range.setEnd(range.endContainer, Math.min(range.endContainer.length, range.endOffset + 1));
+            }
+
+            const charToDelete = range.toString();
+            if (!charToDelete) return;
+
+            // Crear span tachado
+            const deletedSpan = document.createElement('span');
+            deletedSpan.className = 'ai-deleted-text just-deleted';
+            deletedSpan.textContent = charToDelete;
+            deletedSpan.dataset.deleted = 'true';
+            deletedSpan.dataset.deletedBy = 'user';
+            deletedSpan.dataset.timestamp = new Date().toISOString();
+
+            // Reemplazar con span tachado
+            range.deleteContents();
+            range.insertNode(deletedSpan);
+
+            // Mover cursor después del span
+            range.setStartAfter(deletedSpan);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            // Registrar cambio
+            this.registerChange({
+                type: 'user-delete-char',
+                text: charToDelete,
+                timestamp: new Date().toISOString()
+            });
+
+            // Remover animación
+            setTimeout(() => {
+                deletedSpan.classList.remove('just-deleted');
+            }, 1500);
+        }
     },
 
     /**
@@ -455,10 +622,12 @@ window.trackChangesService = {
     countPendingChanges(editorElement) {
         if (!editorElement) return 0;
 
+        const userTexts = editorElement.querySelectorAll('.user-edited-text:not([data-accepted])');
         const aiTexts = editorElement.querySelectorAll('.ai-generated-text:not([data-accepted])');
+        const deletedTexts = editorElement.querySelectorAll('.ai-deleted-text:not(.ai-change-group .ai-deleted-text):not([data-accepted])');
         const changeGroups = editorElement.querySelectorAll('.ai-change-group:not([data-accepted])');
 
-        return aiTexts.length + changeGroups.length;
+        return userTexts.length + aiTexts.length + deletedTexts.length + changeGroups.length;
     },
 
     /**
@@ -469,6 +638,15 @@ window.trackChangesService = {
 
         let count = 0;
 
+        // Aceptar todos los textos del usuario (remover markup, dejar texto)
+        const userTexts = editorElement.querySelectorAll('.user-edited-text');
+        userTexts.forEach(span => {
+            const text = span.textContent;
+            const textNode = document.createTextNode(text);
+            span.parentNode.replaceChild(textNode, span);
+            count++;
+        });
+
         // Aceptar todos los textos generados por IA (remover markup, dejar texto)
         const aiTexts = editorElement.querySelectorAll('.ai-generated-text');
         aiTexts.forEach(span => {
@@ -478,7 +656,14 @@ window.trackChangesService = {
             count++;
         });
 
-        // Aceptar todos los reemplazos (mantener solo texto nuevo)
+        // Aceptar todos los textos eliminados (removerlos completamente)
+        const deletedTexts = editorElement.querySelectorAll('.ai-deleted-text:not(.ai-change-group .ai-deleted-text)');
+        deletedTexts.forEach(span => {
+            span.remove(); // Eliminar completamente el texto tachado
+            count++;
+        });
+
+        // Aceptar todos los reemplazos (mantener solo texto nuevo, eliminar tachado)
         const changeGroups = editorElement.querySelectorAll('.ai-change-group');
         changeGroups.forEach(group => {
             const insertedSpan = group.querySelector('.ai-inserted-text');
@@ -512,10 +697,26 @@ window.trackChangesService = {
 
         let count = 0;
 
+        // Rechazar todos los textos del usuario (eliminarlos)
+        const userTexts = editorElement.querySelectorAll('.user-edited-text');
+        userTexts.forEach(span => {
+            span.remove();
+            count++;
+        });
+
         // Rechazar todos los textos generados por IA (eliminarlos)
         const aiTexts = editorElement.querySelectorAll('.ai-generated-text');
         aiTexts.forEach(span => {
             span.remove();
+            count++;
+        });
+
+        // Rechazar todas las eliminaciones (restaurar texto tachado)
+        const deletedTexts = editorElement.querySelectorAll('.ai-deleted-text:not(.ai-change-group .ai-deleted-text)');
+        deletedTexts.forEach(span => {
+            const text = span.textContent;
+            const textNode = document.createTextNode(text);
+            span.parentNode.replaceChild(textNode, span);
             count++;
         });
 
