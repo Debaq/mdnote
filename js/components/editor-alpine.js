@@ -41,6 +41,14 @@ window.editorAlpineComponent = function() {
             };
             document.addEventListener('keydown', this.keyboardHandler);
 
+            // Watcher para detectar cambios de capítulo y recargar HTML
+            this.$watch('currentChapter', (newChapter, oldChapter) => {
+                if (newChapter && oldChapter && newChapter.id !== oldChapter.id) {
+                    // Cambió el capítulo, recargar HTML completo
+                    this.reloadChapterContent();
+                }
+            });
+
             // Nota: La inicialización y actualización del SearchService
             // ahora se maneja globalmente en app.js con Alpine.effect()
             // para evitar duplicación y mejorar el rendimiento
@@ -142,17 +150,24 @@ window.editorAlpineComponent = function() {
             // Aplicar modo readonly por defecto (para Track Changes)
             this.$nextTick(() => {
                 const editorElement = this.editor?.editor;
-                if (editorElement && window.trackChangesService) {
-                    // Establecer el capítulo actual en el servicio de track changes
-                    if (this.currentChapter?.id) {
-                        window.trackChangesService.setCurrentChapter(this.currentChapter.id);
+                if (editorElement) {
+                    // CARGAR HTML COMPLETO con los spans de track changes
+                    if (this.currentChapter?.content) {
+                        editorElement.innerHTML = this.currentChapter.content;
                     }
 
-                    // Asegurar que el editor inicia en modo readonly
-                    editorElement.contentEditable = false;
-                    editorElement.classList.add('readonly-mode');
-                    editorElement.classList.remove('edit-mode-active');
-                    console.log('✅ Editor inicializado en modo readonly para capítulo:', this.currentChapter?.id);
+                    if (window.trackChangesService) {
+                        // Establecer el capítulo actual en el servicio de track changes
+                        if (this.currentChapter?.id) {
+                            window.trackChangesService.setCurrentChapter(this.currentChapter.id);
+                        }
+
+                        // Asegurar que el editor inicia en modo readonly
+                        editorElement.contentEditable = false;
+                        editorElement.classList.add('readonly-mode');
+                        editorElement.classList.remove('edit-mode-active');
+                        console.log('✅ Editor inicializado en modo readonly para capítulo:', this.currentChapter?.id);
+                    }
                 }
             });
         },
@@ -281,6 +296,32 @@ window.editorAlpineComponent = function() {
         },
 
         /**
+         * Recargar contenido del capítulo (cuando cambia de capítulo)
+         */
+        reloadChapterContent() {
+            if (!this.editor || !this.currentChapter) return;
+
+            const editorElement = this.editor.editor;
+            if (!editorElement) return;
+
+            // CARGAR HTML COMPLETO con los spans de track changes
+            if (this.currentChapter.content) {
+                editorElement.innerHTML = this.currentChapter.content;
+                console.log('✅ Contenido recargado con track changes para capítulo:', this.currentChapter.id);
+            }
+
+            // Actualizar el capítulo actual en el servicio de track changes
+            if (window.trackChangesService && this.currentChapter.id) {
+                window.trackChangesService.setCurrentChapter(this.currentChapter.id);
+            }
+
+            // Actualizar stats
+            const textContent = editorElement.textContent || '';
+            this.charCount = textContent.length;
+            this.wordCount = textContent.trim() ? textContent.trim().split(/\s+/).length : 0;
+        },
+
+        /**
          * Auto-guardar con debounce
          */
         autoSave() {
@@ -303,7 +344,9 @@ window.editorAlpineComponent = function() {
 
             this.$store.ui.editorSaveStatus = 'saving';
 
-            const content = this.editor.getContent();
+            // GUARDAR HTML COMPLETO con los spans de track changes
+            const editorElement = this.editor.editor;
+            const content = editorElement ? editorElement.innerHTML : this.editor.getContent();
 
             // Guardar en el store
             this.$store.project.updateChapter(this.currentChapter.id, {
