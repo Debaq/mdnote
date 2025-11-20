@@ -11,7 +11,8 @@ window.trackChangesService = {
 
     editMode: false, // Modo edición activo/inactivo (false = readonly)
     showColors: true, // Mostrar colores temporalmente (no se guarda)
-    changes: [], // Registro de todos los cambios
+    changesByChapter: {}, // Registro de cambios POR CAPÍTULO: { 'chapterId': [...] }
+    currentChapterId: null, // ID del capítulo actualmente editándose
     changeIdCounter: 0,
 
     /**
@@ -26,20 +27,85 @@ window.trackChangesService = {
         // Mostrar colores por defecto
         this.showColors = true;
 
-        // Cargar cambios guardados (opcional)
-        const savedChanges = localStorage.getItem('track_changes_list');
+        // Cargar cambios guardados por capítulo
+        const savedChanges = localStorage.getItem('track_changes_by_chapter');
         if (savedChanges) {
             try {
-                this.changes = JSON.parse(savedChanges);
-                this.changeIdCounter = Math.max(...this.changes.map(c => c.id), 0) + 1;
+                this.changesByChapter = JSON.parse(savedChanges);
+                // Encontrar el changeId más alto entre todos los capítulos
+                let maxId = 0;
+                Object.values(this.changesByChapter).forEach(chapterChanges => {
+                    const chapterMaxId = Math.max(...chapterChanges.map(c => c.id), 0);
+                    if (chapterMaxId > maxId) maxId = chapterMaxId;
+                });
+                this.changeIdCounter = maxId + 1;
             } catch (e) {
                 console.error('Error loading saved changes:', e);
-                this.changes = [];
+                this.changesByChapter = {};
             }
         }
 
+        // Migrar cambios antiguos del formato legacy si existen
+        this.migrateLegacyChanges();
+
         // Escuchar cambios del usuario cuando está en modo edición
         this.setupUserInputTracking();
+    },
+
+    /**
+     * Migrar cambios del formato antiguo (array global) al nuevo (por capítulo)
+     */
+    migrateLegacyChanges() {
+        const legacyChanges = localStorage.getItem('track_changes_list');
+        if (legacyChanges) {
+            try {
+                const changes = JSON.parse(legacyChanges);
+                if (Array.isArray(changes) && changes.length > 0) {
+                    console.log('🔄 Migrando cambios del formato legacy...');
+                    // Asignar todos los cambios legacy a un capítulo "unknown"
+                    // o intentar inferir el capítulo si tienen metadata
+                    const unknownChapterId = 'legacy-unknown';
+                    this.changesByChapter[unknownChapterId] = changes;
+                    this.saveChanges();
+                    // Eliminar el formato antiguo
+                    localStorage.removeItem('track_changes_list');
+                    console.log('✅ Cambios migrados al nuevo formato');
+                }
+            } catch (e) {
+                console.error('Error migrando cambios legacy:', e);
+            }
+        }
+    },
+
+    /**
+     * Establecer el capítulo actualmente en edición
+     */
+    setCurrentChapter(chapterId) {
+        this.currentChapterId = chapterId;
+        console.log(`📖 Capítulo actual establecido: ${chapterId}`);
+        // Asegurar que existe el array de cambios para este capítulo
+        if (!this.changesByChapter[chapterId]) {
+            this.changesByChapter[chapterId] = [];
+        }
+    },
+
+    /**
+     * Obtener cambios del capítulo actual
+     */
+    getCurrentChapterChanges() {
+        if (!this.currentChapterId) return [];
+        return this.changesByChapter[this.currentChapterId] || [];
+    },
+
+    /**
+     * Guardar cambios en localStorage
+     */
+    saveChanges() {
+        try {
+            localStorage.setItem('track_changes_by_chapter', JSON.stringify(this.changesByChapter));
+        } catch (e) {
+            console.error('Error guardando cambios:', e);
+        }
     },
 
     /**
@@ -680,10 +746,12 @@ window.trackChangesService = {
         changeGroup.parentNode.replaceChild(textNode, changeGroup);
 
         // Marcar como aceptado en el registro
-        const change = this.changes.find(c => c.id === parseInt(changeId));
+        const changes = this.getCurrentChapterChanges();
+        const change = changes.find(c => c.id === parseInt(changeId));
         if (change) {
             change.accepted = true;
             change.acceptedAt = new Date().toISOString();
+            this.saveChanges();
         }
 
         console.log('✅ Change accepted:', changeId);
@@ -706,10 +774,12 @@ window.trackChangesService = {
         changeGroup.parentNode.replaceChild(textNode, changeGroup);
 
         // Marcar como rechazado en el registro
-        const change = this.changes.find(c => c.id === parseInt(changeId));
+        const changes = this.getCurrentChapterChanges();
+        const change = changes.find(c => c.id === parseInt(changeId));
         if (change) {
             change.rejected = true;
             change.rejectedAt = new Date().toISOString();
+            this.saveChanges();
         }
 
         console.log('❌ Change rejected:', changeId);
@@ -723,25 +793,34 @@ window.trackChangesService = {
      * Registrar un cambio en el historial
      */
     registerChange(change) {
+        if (!this.currentChapterId) {
+            console.warn('⚠️ No hay capítulo actual establecido, no se puede registrar cambio');
+            return;
+        }
         const id = this.changeIdCounter++;
-        this.changes.push({
+        if (!this.changesByChapter[this.currentChapterId]) {
+            this.changesByChapter[this.currentChapterId] = [];
+        }
+        this.changesByChapter[this.currentChapterId].push({
             id: id,
+            chapterId: this.currentChapterId, // Guardar referencia al capítulo
             ...change,
             accepted: false,
             rejected: false
         });
 
-        // Guardar en localStorage (opcional)
+        // Guardar en localStorage
         this.saveChanges();
 
         return id;
     },
 
     /**
-     * Obtener todos los cambios pendientes
+     * Obtener todos los cambios pendientes del capítulo actual
      */
     getPendingChanges() {
-        return this.changes.filter(c => !c.accepted && !c.rejected);
+        const changes = this.getCurrentChapterChanges();
+        return changes.filter(c => !c.accepted && !c.rejected);
     },
 
     /**
@@ -803,8 +882,9 @@ window.trackChangesService = {
             }
         });
 
-        // Marcar todos como aceptados
-        this.changes.forEach(change => {
+        // Marcar todos como aceptados en el capítulo actual
+        const changes = this.getCurrentChapterChanges();
+        changes.forEach(change => {
             if (!change.accepted && !change.rejected) {
                 change.accepted = true;
                 change.acceptedAt = new Date().toISOString();
@@ -860,8 +940,9 @@ window.trackChangesService = {
             }
         });
 
-        // Marcar todos como rechazados
-        this.changes.forEach(change => {
+        // Marcar todos como rechazados en el capítulo actual
+        const changes = this.getCurrentChapterChanges();
+        changes.forEach(change => {
             if (!change.accepted && !change.rejected) {
                 change.rejected = true;
                 change.rejectedAt = new Date().toISOString();
@@ -875,24 +956,24 @@ window.trackChangesService = {
     },
 
     /**
-     * Limpiar el historial de cambios
+     * Limpiar el historial de cambios del capítulo actual
      */
     clearChanges() {
-        this.changes = [];
-        this.changeIdCounter = 0;
-        this.saveChanges();
-        console.log('🗑️ Changes history cleared');
+        if (this.currentChapterId) {
+            this.changesByChapter[this.currentChapterId] = [];
+            this.saveChanges();
+            console.log(`🗑️ Changes history cleared for chapter ${this.currentChapterId}`);
+        }
     },
 
     /**
-     * Guardar cambios en localStorage
+     * Limpiar el historial de cambios de TODOS los capítulos (usar con cuidado)
      */
-    saveChanges() {
-        try {
-            localStorage.setItem('track_changes_list', JSON.stringify(this.changes));
-        } catch (e) {
-            console.error('Error saving changes:', e);
-        }
+    clearAllChanges() {
+        this.changesByChapter = {};
+        this.changeIdCounter = 0;
+        this.saveChanges();
+        console.log('🗑️ All changes history cleared');
     },
 
     // ============================================
@@ -900,13 +981,14 @@ window.trackChangesService = {
     // ============================================
 
     /**
-     * Obtener estadísticas de cambios
+     * Obtener estadísticas de cambios del capítulo actual
      */
     getStats(editorElement) {
         const pending = this.countPendingChanges(editorElement);
-        const accepted = this.changes.filter(c => c.accepted).length;
-        const rejected = this.changes.filter(c => c.rejected).length;
-        const total = this.changes.length;
+        const changes = this.getCurrentChapterChanges();
+        const accepted = changes.filter(c => c.accepted).length;
+        const rejected = changes.filter(c => c.rejected).length;
+        const total = changes.length;
 
         return {
             pending,
@@ -917,19 +999,58 @@ window.trackChangesService = {
     },
 
     /**
-     * Exportar cambios como JSON (para backup/análisis)
+     * Obtener estadísticas globales de todos los capítulos
      */
-    exportChanges() {
-        return JSON.stringify(this.changes, null, 2);
+    getGlobalStats() {
+        let totalAccepted = 0;
+        let totalRejected = 0;
+        let totalPending = 0;
+        let totalChanges = 0;
+
+        Object.values(this.changesByChapter).forEach(chapterChanges => {
+            chapterChanges.forEach(change => {
+                totalChanges++;
+                if (change.accepted) totalAccepted++;
+                else if (change.rejected) totalRejected++;
+                else totalPending++;
+            });
+        });
+
+        return {
+            pending: totalPending,
+            accepted: totalAccepted,
+            rejected: totalRejected,
+            total: totalChanges,
+            chapters: Object.keys(this.changesByChapter).length
+        };
     },
 
     /**
-     * Importar cambios desde JSON
+     * Exportar cambios del capítulo actual como JSON
+     */
+    exportChanges() {
+        const changes = this.getCurrentChapterChanges();
+        return JSON.stringify(changes, null, 2);
+    },
+
+    /**
+     * Exportar cambios de todos los capítulos como JSON
+     */
+    exportAllChanges() {
+        return JSON.stringify(this.changesByChapter, null, 2);
+    },
+
+    /**
+     * Importar cambios desde JSON (para el capítulo actual)
      */
     importChanges(jsonString) {
         try {
-            this.changes = JSON.parse(jsonString);
-            this.changeIdCounter = Math.max(...this.changes.map(c => c.id), 0) + 1;
+            const changes = JSON.parse(jsonString);
+            if (!this.currentChapterId) {
+                console.warn('⚠️ No hay capítulo actual establecido');
+                return false;
+            }
+            this.changesByChapter[this.currentChapterId] = changes;
             this.saveChanges();
             return true;
         } catch (e) {

@@ -204,7 +204,9 @@ window.trackChangesUI = function() {
         },
 
         /**
-         * Crear commit automático
+         * Crear commit automático usando isomorphic-git
+         * NOTA: Usa isomorphic-git que es un sistema Git en el navegador.
+         * Para integrar con Git real del sistema, configurar git-integration-service.js con un backend.
          */
         async createAutoCommit(changeCount) {
             try {
@@ -219,19 +221,70 @@ window.trackChangesUI = function() {
 Cambios aceptados y normalizados automáticamente.
 Fecha: ${new Date().toISOString()}`;
 
-                // Ejecutar git add y commit (usando el store de version control si existe)
+                console.log('🔄 Creando commit en Git (isomorphic-git)...');
+
+                // Verificar si gitService está disponible
+                if (!window.gitService) {
+                    console.warn('⚠️ gitService no disponible. Usando sistema de version control interno...');
+                    if (this.$store && this.$store.versionControl) {
+                        await this.$store.versionControl.createCommit(commitMessage);
+                        console.log('✅ Commit creado en sistema de version control interno');
+                    }
+                    return;
+                }
+
+                // Guardar el proyecto antes de hacer commit
+                if (this.$store && this.$store.project && this.$store.project.autoSave) {
+                    await this.$store.project.autoSave();
+                    // Esperar un momento para que se complete el guardado
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                // Obtener el estado actual del proyecto
+                const projectData = this.$store.project.exportProject();
+
+                // Guardar el estado del proyecto en isomorphic-git
+                await window.gitService.saveProjectState(projectData, commitMessage);
+
+                // Crear el commit
+                const sha = await window.gitService.commit(commitMessage, {
+                    name: 'Track Changes',
+                    email: 'track-changes@mdnote.local'
+                });
+
+                console.log('✅ Commit creado en isomorphic-git:', sha);
+
+                // También crear en el sistema de version control interno para mantener compatibilidad
                 if (this.$store && this.$store.versionControl) {
                     await this.$store.versionControl.createCommit(commitMessage);
-                    console.log('✅ Commit automático creado');
-                } else {
-                    console.warn('⚠️ Version control store no disponible');
                 }
+
+                // Notificar éxito
+                if (this.$store && this.$store.ui) {
+                    this.$store.ui.success(
+                        'Commit Creado',
+                        `Commit ${sha.substring(0, 7)} creado exitosamente en Git.`
+                    );
+                }
+
+                // Si git-integration-service está disponible Y configurado, también hacer commit en Git real
+                if (window.gitIntegrationService && window.gitIntegrationService.isGitAvailable) {
+                    try {
+                        console.log('🔄 También creando commit en Git real del sistema...');
+                        await window.gitIntegrationService.commitAll(commitMessage);
+                        console.log('✅ Commit también creado en Git real del sistema');
+                    } catch (gitError) {
+                        console.warn('⚠️ No se pudo crear commit en Git real:', gitError.message);
+                        // No es crítico, ya tenemos el commit en isomorphic-git
+                    }
+                }
+
             } catch (error) {
                 console.error('❌ Error creando commit automático:', error);
                 if (this.$store && this.$store.ui) {
                     this.$store.ui.error(
                         'Error en Commit',
-                        'No se pudo crear el commit automático. Los cambios se guardaron pero no se commitearon.'
+                        `No se pudo crear el commit: ${error.message || error}`
                     );
                 }
             }
