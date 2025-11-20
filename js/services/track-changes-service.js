@@ -165,7 +165,7 @@ window.trackChangesService = {
         if (cursorNode.nodeType === Node.TEXT_NODE) {
             const parentNode = cursorNode.parentNode;
 
-            // Si el parent ya es un span marcado, extender ese span
+            // Si el parent ya es un span marcado de usuario o IA, permitir escritura pero no re-marcar
             if (parentNode.classList &&
                 (parentNode.classList.contains('user-edited-text') ||
                  parentNode.classList.contains('ai-generated-text'))) {
@@ -173,50 +173,68 @@ window.trackChangesService = {
                 return;
             }
 
-            // Si el parent es el editor directamente, envolver
-            if (parentNode === editorElement ||
-                parentNode.classList?.contains('rich-editor-content')) {
+            // Si el parent es el editor o un elemento no marcado
+            const cursorOffset = range.startOffset;
+            const fullText = cursorNode.textContent;
 
-                const cursorOffset = range.startOffset;
-                const fullText = cursorNode.textContent;
+            // Solo envolver si hay texto insertado
+            if (!insertedData || !fullText) return;
 
-                // Solo envolver si hay texto
-                if (!fullText) return;
+            // Dividir el text node en tres partes: antes, nuevo, después
+            const beforeText = fullText.substring(0, cursorOffset - insertedData.length);
+            const newText = insertedData;
+            const afterText = fullText.substring(cursorOffset);
 
-                // Crear span verde para texto del usuario
-                const span = document.createElement('span');
-                span.className = 'user-edited-text just-inserted';
-                span.textContent = fullText;
-                span.dataset.userEdited = 'true';
-                span.dataset.timestamp = new Date().toISOString();
+            // Limpiar el nodo original
+            const fragment = document.createDocumentFragment();
 
-                // Reemplazar text node con span
-                parentNode.replaceChild(span, cursorNode);
-
-                // Restaurar cursor dentro del span
-                const newRange = document.createRange();
-                const textNode = span.firstChild;
-                if (textNode) {
-                    newRange.setStart(textNode, cursorOffset);
-                    newRange.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(newRange);
-                }
-
-                // Registrar cambio
-                this.registerChange({
-                    type: 'user-insert',
-                    text: fullText,
-                    timestamp: new Date().toISOString()
-                });
-
-                // Remover animación
-                setTimeout(() => {
-                    span.classList.remove('just-inserted');
-                }, 1500);
-
-                console.log('✅ User text wrapped in green:', fullText.substring(0, 20));
+            // Parte 1: texto antes (si existe)
+            if (beforeText) {
+                fragment.appendChild(document.createTextNode(beforeText));
             }
+
+            // Parte 2: nuevo texto en verde
+            const span = document.createElement('span');
+            span.className = 'user-edited-text just-inserted';
+            span.textContent = newText;
+            span.dataset.userEdited = 'true';
+            span.dataset.timestamp = new Date().toISOString();
+            fragment.appendChild(span);
+
+            // Parte 3: texto después (si existe)
+            let afterNode = null;
+            if (afterText) {
+                afterNode = document.createTextNode(afterText);
+                fragment.appendChild(afterNode);
+            }
+
+            // Reemplazar el text node original con el fragmento
+            parentNode.replaceChild(fragment, cursorNode);
+
+            // Restaurar cursor después del span verde
+            const newRange = document.createRange();
+            if (afterNode) {
+                newRange.setStart(afterNode, 0);
+            } else {
+                newRange.setStartAfter(span);
+            }
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+
+            // Registrar cambio
+            this.registerChange({
+                type: 'user-insert',
+                text: newText,
+                timestamp: new Date().toISOString()
+            });
+
+            // Remover animación
+            setTimeout(() => {
+                span.classList.remove('just-inserted');
+            }, 1500);
+
+            console.log('✅ User text wrapped in green:', newText);
         }
     },
 
@@ -227,7 +245,7 @@ window.trackChangesService = {
         const sel = window.getSelection();
         if (!sel.rangeCount) return;
 
-        const range = sel.getRangeAt(0);
+        let range = sel.getRangeAt(0).cloneRange();
 
         // Si hay selección, tachar el texto seleccionado
         if (!range.collapsed) {
@@ -265,54 +283,67 @@ window.trackChangesService = {
             }, 1500);
 
             console.log('✅ User deletion marked as strikethrough:', selectedText.substring(0, 20));
+            return;
         }
-        // Si no hay selección, eliminar un carácter antes del cursor (backspace) o después (delete)
-        else {
-            // Determinar dirección de la eliminación
-            const isBackspace = window.event?.inputType === 'deleteContentBackward';
 
+        // Si no hay selección, eliminar un carácter
+        const isBackspace = window.event?.inputType === 'deleteContentBackward';
+
+        // Intentar expandir el range para seleccionar un carácter
+        try {
             if (isBackspace) {
-                // Backspace: seleccionar un carácter antes del cursor
-                range.setStart(range.startContainer, Math.max(0, range.startOffset - 1));
-                range.setEnd(range.startContainer, range.startOffset);
+                // Backspace: extender hacia atrás
+                sel.modify('extend', 'backward', 'character');
             } else {
-                // Delete: seleccionar un carácter después del cursor
-                range.setStart(range.startContainer, range.startOffset);
-                range.setEnd(range.endContainer, Math.min(range.endContainer.textContent?.length || 0, range.endOffset + 1));
+                // Delete: extender hacia adelante
+                sel.modify('extend', 'forward', 'character');
             }
 
-            const charToDelete = range.toString();
-            if (!charToDelete) return;
+            // Obtener el nuevo range después de extender
+            if (sel.rangeCount > 0) {
+                range = sel.getRangeAt(0);
+                const charToDelete = range.toString();
 
-            // Crear span tachado
-            const deletedSpan = document.createElement('span');
-            deletedSpan.className = 'ai-deleted-text just-deleted';
-            deletedSpan.textContent = charToDelete;
-            deletedSpan.dataset.deleted = 'true';
-            deletedSpan.dataset.deletedBy = 'user';
-            deletedSpan.dataset.timestamp = new Date().toISOString();
+                if (!charToDelete) {
+                    console.log('⚠️ No hay texto para eliminar');
+                    return;
+                }
 
-            // Reemplazar con span tachado
-            range.deleteContents();
-            range.insertNode(deletedSpan);
+                // Crear span tachado
+                const deletedSpan = document.createElement('span');
+                deletedSpan.className = 'ai-deleted-text just-deleted';
+                deletedSpan.textContent = charToDelete;
+                deletedSpan.dataset.deleted = 'true';
+                deletedSpan.dataset.deletedBy = 'user';
+                deletedSpan.dataset.timestamp = new Date().toISOString();
 
-            // Mover cursor ANTES del span (para poder seguir borrando)
-            range.setStartBefore(deletedSpan);
-            range.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(range);
+                // Reemplazar con span tachado
+                range.deleteContents();
+                range.insertNode(deletedSpan);
 
-            // Registrar cambio
-            this.registerChange({
-                type: 'user-delete-char',
-                text: charToDelete,
-                timestamp: new Date().toISOString()
-            });
+                // Mover cursor ANTES del span (para poder seguir borrando)
+                const newRange = document.createRange();
+                newRange.setStartBefore(deletedSpan);
+                newRange.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
 
-            // Remover animación
-            setTimeout(() => {
-                deletedSpan.classList.remove('just-deleted');
-            }, 1500);
+                // Registrar cambio
+                this.registerChange({
+                    type: 'user-delete-char',
+                    text: charToDelete,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Remover animación
+                setTimeout(() => {
+                    deletedSpan.classList.remove('just-deleted');
+                }, 1500);
+
+                console.log('✅ Character marked as strikethrough:', charToDelete);
+            }
+        } catch (error) {
+            console.error('❌ Error en handleUserDeletion:', error);
         }
     },
 
