@@ -98,6 +98,9 @@ window.trackChangesService = {
      * Configurar rastreo de input del usuario
      */
     setupUserInputTracking() {
+        // Variable para guardar el último texto antes de editar
+        let beforeText = '';
+
         // Escuchar evento beforeinput para interceptar cambios del usuario
         document.addEventListener('beforeinput', (e) => {
             // Solo trackear si está en modo edición
@@ -109,17 +112,39 @@ window.trackChangesService = {
 
             const inputType = e.inputType;
 
-            // INSERCIÓN DE TEXTO: envolver en verde
+            // INSERCIÓN DE TEXTO: permitir inserción y envolver después
             if (inputType === 'insertText' || inputType === 'insertFromPaste') {
-                // El texto ya se insertará normalmente, pero necesitamos envolverlo después
-                setTimeout(() => {
-                    this.wrapLastInsertedText(target);
-                }, 10);
+                // Guardar posición del cursor antes
+                const sel = window.getSelection();
+                if (sel.rangeCount) {
+                    this.lastCursorPosition = sel.getRangeAt(0).cloneRange();
+                }
+
+                // Permitir que el texto se inserte normalmente
+                // Luego envolverlo en el evento 'input'
             }
             // ELIMINACIÓN DE TEXTO: convertir a tachado
             else if (inputType.startsWith('delete')) {
                 e.preventDefault(); // Prevenir eliminación normal
                 this.handleUserDeletion(target);
+            }
+        });
+
+        // Escuchar evento input para envolver texto insertado
+        document.addEventListener('input', (e) => {
+            // Solo trackear si está en modo edición
+            if (!this.editMode) return;
+
+            const target = e.target;
+            // Verificar que sea el editor
+            if (!target || !target.classList.contains('rich-editor-content')) return;
+
+            // Solo procesar si es inserción de texto
+            if (e.inputType === 'insertText' || e.inputType === 'insertFromPaste') {
+                // Pequeño delay para asegurar que el texto esté en el DOM
+                setTimeout(() => {
+                    this.wrapLastInsertedText(target, e.data);
+                }, 0);
             }
         });
 
@@ -129,49 +154,69 @@ window.trackChangesService = {
     /**
      * Envolver el último texto insertado por el usuario
      */
-    wrapLastInsertedText(editorElement) {
+    wrapLastInsertedText(editorElement, insertedData) {
         const sel = window.getSelection();
         if (!sel.rangeCount) return;
 
         const range = sel.getRangeAt(0);
         const cursorNode = range.startContainer;
 
-        // Si es un text node simple (no marcado), envolverlo
-        if (cursorNode.nodeType === Node.TEXT_NODE &&
-            cursorNode.parentNode === editorElement) {
+        // Si el cursor está dentro de un text node
+        if (cursorNode.nodeType === Node.TEXT_NODE) {
+            const parentNode = cursorNode.parentNode;
 
-            const text = cursorNode.textContent;
-            if (!text) return;
+            // Si el parent ya es un span marcado, extender ese span
+            if (parentNode.classList &&
+                (parentNode.classList.contains('user-edited-text') ||
+                 parentNode.classList.contains('ai-generated-text'))) {
+                // Ya está marcado, no hacer nada
+                return;
+            }
 
-            // Crear span verde para texto del usuario
-            const span = document.createElement('span');
-            span.className = 'user-edited-text just-inserted';
-            span.textContent = text;
-            span.dataset.userEdited = 'true';
-            span.dataset.timestamp = new Date().toISOString();
+            // Si el parent es el editor directamente, envolver
+            if (parentNode === editorElement ||
+                parentNode.classList?.contains('rich-editor-content')) {
 
-            // Reemplazar text node con span
-            cursorNode.parentNode.replaceChild(span, cursorNode);
+                const cursorOffset = range.startOffset;
+                const fullText = cursorNode.textContent;
 
-            // Restaurar cursor al final del span
-            range.setStart(span.firstChild || span, text.length);
-            range.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(range);
+                // Solo envolver si hay texto
+                if (!fullText) return;
 
-            // Registrar cambio
-            this.registerChange({
-                type: 'user-insert',
-                text: text,
-                timestamp: new Date().toISOString()
-            });
+                // Crear span verde para texto del usuario
+                const span = document.createElement('span');
+                span.className = 'user-edited-text just-inserted';
+                span.textContent = fullText;
+                span.dataset.userEdited = 'true';
+                span.dataset.timestamp = new Date().toISOString();
 
-            // Remover animación
-            setTimeout(() => {
-                span.classList.remove('just-inserted');
-            }, 1500);
+                // Reemplazar text node con span
+                parentNode.replaceChild(span, cursorNode);
 
-            console.log('✅ User text wrapped in green:', text.substring(0, 20));
+                // Restaurar cursor dentro del span
+                const newRange = document.createRange();
+                const textNode = span.firstChild;
+                if (textNode) {
+                    newRange.setStart(textNode, cursorOffset);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                }
+
+                // Registrar cambio
+                this.registerChange({
+                    type: 'user-insert',
+                    text: fullText,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Remover animación
+                setTimeout(() => {
+                    span.classList.remove('just-inserted');
+                }, 1500);
+
+                console.log('✅ User text wrapped in green:', fullText.substring(0, 20));
+            }
         }
     },
 
@@ -201,8 +246,8 @@ window.trackChangesService = {
             range.deleteContents();
             range.insertNode(deletedSpan);
 
-            // Mover cursor después del span
-            range.setStartAfter(deletedSpan);
+            // Mover cursor ANTES del span (para poder seguir borrando)
+            range.setStartBefore(deletedSpan);
             range.collapse(true);
             sel.removeAllRanges();
             sel.addRange(range);
@@ -227,11 +272,13 @@ window.trackChangesService = {
             const isBackspace = window.event?.inputType === 'deleteContentBackward';
 
             if (isBackspace) {
-                // Mover cursor un carácter atrás
+                // Backspace: seleccionar un carácter antes del cursor
                 range.setStart(range.startContainer, Math.max(0, range.startOffset - 1));
+                range.setEnd(range.startContainer, range.startOffset);
             } else {
-                // Mover cursor un carácter adelante
-                range.setEnd(range.endContainer, Math.min(range.endContainer.length, range.endOffset + 1));
+                // Delete: seleccionar un carácter después del cursor
+                range.setStart(range.startContainer, range.startOffset);
+                range.setEnd(range.endContainer, Math.min(range.endContainer.textContent?.length || 0, range.endOffset + 1));
             }
 
             const charToDelete = range.toString();
@@ -249,8 +296,8 @@ window.trackChangesService = {
             range.deleteContents();
             range.insertNode(deletedSpan);
 
-            // Mover cursor después del span
-            range.setStartAfter(deletedSpan);
+            // Mover cursor ANTES del span (para poder seguir borrando)
+            range.setStartBefore(deletedSpan);
             range.collapse(true);
             sel.removeAllRanges();
             sel.addRange(range);
